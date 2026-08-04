@@ -30,8 +30,9 @@
             padding: 16px;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1720px;
             margin: 0 auto;
+            padding: 12px 16px;
         }
         /* Header */
         .header {
@@ -40,7 +41,7 @@
             align-items: center;
             border-bottom: 2px solid var(--card-border);
             padding-bottom: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
             gap: 10px;
         }
@@ -54,6 +55,7 @@
             font-size: 22px;
             font-weight: bold;
             letter-spacing: 1px;
+            text-shadow: 0 0 12px rgba(0, 240, 144, 0.3);
         }
         .badge-online {
             background: rgba(0, 240, 144, 0.15);
@@ -103,28 +105,47 @@
             font-size: 13px;
         }
 
-        /* Layout Grids */
-        .grid-4-dashboard {
+        /* Structured Dashboard Row Grids */
+        .dashboard-top-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 16px;
         }
+        .dashboard-middle-row {
+            display: grid;
+            grid-template-columns: 1.8fr 1.2fr;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .dashboard-bottom-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
         @media (max-width: 1400px) {
-            .grid-4-dashboard {
+            .dashboard-top-row {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            .dashboard-middle-row {
+                grid-template-columns: 1fr;
+            }
+            .dashboard-bottom-row {
+                grid-template-columns: 1fr;
             }
         }
         @media (max-width: 768px) {
-            .grid-4-dashboard {
+            .dashboard-top-row {
                 grid-template-columns: 1fr;
             }
         }
         .grid-3 {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 16px;
         }
         @media (max-width: 900px) {
             .grid-3 {
@@ -134,8 +155,8 @@
         .grid-2 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 16px;
         }
         
         /* Card Component */
@@ -492,8 +513,8 @@
             </div>
         </div>
 
-        <!-- Task 1: Wallet & Settings Grid -->
-        <div class="grid-4-dashboard">
+        <!-- Top Row (4 equal columns): Wallet, Switches, Master Bot Settings, Strategy Testing -->
+        <div class="dashboard-top-row">
             <!-- Wallet Balance Card -->
             <div class="card">
                 <div class="card-header">
@@ -821,278 +842,379 @@
         </div>
         </div>
 
-        <!-- Task 1 Sub: Dense Diagnostics & Runtime Identity -->
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-header">
-                <h3 class="card-title">🔍 Diagnostics & Runtime Identity</h3>
-                <span style="color:var(--text-muted); font-size:11px;">PID: 10000</span>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; font-size:12px;">
-                <div><span class="metric-label">App Version:</span> <span id="identity-app_version" class="metric-val">1.0.0-PROD</span></div>
-                <div><span class="metric-label">Runtime Engine:</span> <span id="identity-runtime_engine" class="metric-val">AlphaEngine-v2.4</span></div>
-                <div><span class="metric-label">Active Provider:</span> <span id="identity-active_provider" class="metric-val">BINANCE_FUTURES_WS</span></div>
-                <div><span class="metric-label">Session UUID:</span> <span id="identity-session_uuid" class="metric-val">c0a80101-8f2e-4d8e-9a1f-3b7c2e9f1a02</span></div>
-                <div><span class="metric-label">Dispatcher:</span> <span id="identity-execution_dispatcher" class="metric-val">AsyncioCoroutineWorker-01</span></div>
-                <div><span class="metric-label">DataStore Sync:</span> <span id="identity-data_store_sync" class="metric-val" style="color:var(--accent-green-bright);">OK (Room/DataStore Synced)</span></div>
-            </div>
-        </div>
-
-        <!-- Task 2: Diagnostic & Error States -->
-        <div class="alert-box">
-            <span>🛡️</span>
-            <span><b>STATE INTEGRITY STATUS:</b> 0 active integrity violations detected. System state is synced across memory and database.</span>
-        </div>
-
-        <div class="grid-2">
-            <!-- Provider Failover Audit Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">📡 Provider Failover Integrity Audit</h3>
-                    <button class="btn btn-accent" onclick="triggerBootstrapRetry()">Retry Data Bootstrap</button>
-                </div>
-                <div id="provider-list">
-                    <!-- Rendered dynamically -->
-                </div>
-            </div>
-
-            <!-- BTC/USDT Candle Readiness Diagnostics Table -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">🕯️ BTC/USDT Candle Readiness Diagnostics</h3>
-                    <button class="btn btn-danger" onclick="triggerDataReset()">Reset Paper Data</button>
-                </div>
-                <table class="custom-table">
-                    <thead>
-                        <tr>
-                            <th>Timeframe</th>
-                            <th>Loaded / Required</th>
-                            <th>Status</th>
-                            <th>Last Close</th>
-                        </tr>
-                    </thead>
-                    <tbody id="candle-readiness-body">
-                        <!-- Rendered dynamically -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Task 3: Opportunity & Authoritative Plan -->
-        <div class="grid-2">
-            <!-- Alpha Opportunity Scoreboard -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">🏆 Alpha Opportunity Scoreboard</h3>
-                    <span class="badge-pass" id="market-regime-badge">TRENDING_BULLISH</span>
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-                    <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
-                        <span class="metric-label">Top Candidate:</span><br>
-                        <span style="font-size:16px; font-weight:bold; color:var(--accent-yellow);" id="top-candidate-name">DOTUSDT</span>
-                        <span style="color:var(--accent-green-bright); font-weight:bold;" id="top-candidate-score">(84.5)</span>
+        <!-- Middle Row (2 columns): Chart & Equity Trajectory (wider) and Live Trades List (narrower) -->
+        <div class="dashboard-middle-row">
+            <!-- Left Column (Wider): Chart & Equity Trajectory + Live Ticker Stream Grid -->
+            <div class="card" style="background: linear-gradient(135deg, rgba(16,20,32,0.98), rgba(11,14,24,0.95)); border: 1px solid rgba(0, 240, 144, 0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                <div class="card-header" style="border-bottom: 1px dashed rgba(0, 240, 144, 0.25); padding-bottom: 10px; margin-bottom: 12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <h3 class="card-title" style="color:var(--accent-green-bright); font-size:16px; letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
+                            📈 Real-Time Multi-Pair Chart & Equity Trajectory
+                        </h3>
+                        <span style="font-size:10px; background:rgba(0, 240, 144, 0.15); color:var(--accent-green-bright); padding:3px 8px; border-radius:12px; font-weight:bold; border:1px solid rgba(0, 240, 144, 0.3);">
+                            LIVE STREAM & SIMULATION VISUALIZER
+                        </span>
                     </div>
-                    <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
-                        <span class="metric-label" id="high-score-label">High Score Count (>70):</span><br>
-                        <span style="font-size:16px; font-weight:bold; color:#fff;" id="high-score-count">4 Pairs</span>
-                    </div>
+                    <span id="stream-status-badge" style="color:var(--accent-green-bright); font-size:11px; font-weight:bold;">⚡ WEBSOCKET ACTIVE</span>
                 </div>
 
-                <table class="custom-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Symbol</th>
-                            <th>Score</th>
-                            <th>Dir</th>
-                            <th>Gate</th>
-                        </tr>
-                    </thead>
-                    <tbody id="candidates-table-body">
-                        <!-- Rendered dynamically -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Authoritative Plan Detail View -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">📋 Authoritative Trade Plan Detail</h3>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <button class="btn btn-purple" style="padding:2px 8px; font-size:10px;" onclick="resetToTopCandidate()" title="Sync Trade Plan with #1 Scoreboard Candidate">⚡ Sync #1 Candidate</button>
-                        <span class="badge-long" id="plan-direction-badge">LONG</span>
-                    </div>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <span style="font-size:18px; font-weight:bold; color:#fff;" id="plan-symbol">DOTUSDT</span>
-                    <span style="color:var(--text-muted); font-size:12px;" id="plan-price">@ $6.710 USDT</span>
-                </div>
-
-                <!-- Gates Status Table -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">GATES STATUS AUDIT</span>
-                    <span style="font-size:10px; color:var(--accent-yellow); cursor:pointer;" onclick="openGateModal('score')">🔍 Click row to inspect</span>
-                </div>
-                <table class="custom-table" style="margin-bottom:12px;">
-                    <tr class="gate-row" onclick="openGateModal('score')" title="Click to view granular Score Gate calculation">
-                        <td id="plan-score-gate-label">Score Gate (>=70.0) <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                        <td><span class="badge-pass" id="plan-score-gate">PASS (84.5)</span></td>
-                    </tr>
-                    <tr class="gate-row" onclick="openGateModal('trend')" title="Click to view Trend Alignment metrics">
-                        <td>Trend Alignment Gate <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                        <td><span class="badge-pass" id="plan-trend-gate">PASS (EMA 20 > 50)</span></td>
-                    </tr>
-                    <tr class="gate-row" onclick="openGateModal('liquidity')" title="Click to view Liquidity & Depth score">
-                        <td>Liquidity Gate (> $50M) <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                        <td><span class="badge-pass" id="plan-liquidity-gate">PASS (92/100)</span></td>
-                    </tr>
-                    <tr class="gate-row" onclick="openGateModal('duplicate')" title="Click to view Duplicate Guard rule detail">
-                        <td>Duplicate Guard Gate <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                        <td><span class="badge-pass" id="plan-duplicate-gate">PASS (0 duplicate positions)</span></td>
-                    </tr>
-                </table>
-
-                <!-- Alpha Score Breakdown Inspector -->
-                <div style="background:var(--chip-bg); border:1px solid var(--card-border); border-radius:6px; padding:10px; margin-bottom:12px; transition: all 0.3s ease;">
+                <!-- Canvas Equity Trajectory Curve -->
+                <div style="background:#05070a; border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:11px; font-weight:bold; color:var(--accent-yellow);">📊 ALPHA SCORE BREAKDOWN INSPECTOR</span>
-                        <span style="font-size:12px; font-weight:bold; color:var(--accent-green-bright);" id="inspector-total-score">84.5 / 100</span>
+                        <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">📈 Cumulative Equity & ROI Curve</span>
+                        <span id="sim-chart-legend" style="font-size:11px; color:var(--accent-green-bright); font-weight:bold;">Start: $10,000 -> Peak: $11,840</span>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;" id="score-breakdown-list">
-                        <!-- Populated dynamically when clicking candidates -->
+                    <canvas id="sim-equity-canvas" height="140" style="width:100%; max-height:220px; display:block;"></canvas>
+                </div>
+
+                <!-- Real-Time Scanner Logs & Pair Ticker Feed -->
+                <div style="margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">📡 LIVE STREAM SCANNER LOGS (10 MAJOR PAIRS)</span>
+                    </div>
+                    <div class="logs-box" id="stream-logs-box" style="max-height:100px; margin-bottom:12px; font-size:11px; border:1px solid rgba(0, 240, 144, 0.2);">
+                        <div style="color:var(--text-muted);">Initializing live stream scanner feed...</div>
+                    </div>
+                    <div style="font-size:11px; font-weight:bold; color:var(--text-muted); margin-bottom:6px;">PAIR TICKERS & LIVE CANDIDATE SCORES:</div>
+                    <div class="stream-grid" id="stream-grid" style="max-height: 180px; overflow-y: auto;">
+                        <!-- Rendered dynamically -->
                     </div>
                 </div>
 
-                <div style="background:rgba(41,98,255,0.1); border:1px solid var(--accent-blue); padding:8px 10px; border-radius:6px; font-size:11px; color:#90caf9; margin-bottom:12px;">
-                    ℹ️ <b>DUPLICATE GUARD:</b> Active. Prevents opening duplicate positions on same symbol.
+                <!-- Simulation Performance Analytics Report Section (Shown when simulation runs) -->
+                <div id="sim-report-card" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed rgba(100, 181, 246, 0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h4 style="color:#64b5f6; margin:0; font-size:14px; display:flex; align-items:center; gap:6px;">
+                            📊 Strategy Performance Analytics Report
+                        </h4>
+                        <span id="sim-executed-at" style="font-size:11px; color:var(--text-muted);">Completed UTC</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:14px;">
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" style="font-size:10px;">Total Trades</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:#fff;" id="sim-rep-trades">0</span>
+                            <div style="font-size:10px; color:var(--text-muted);" id="sim-rep-trades-split">W: 0 | L: 0</div>
+                        </div>
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" style="font-size:10px;">Win Rate</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent-green-bright);" id="sim-rep-winrate">0.0%</span>
+                            <div style="font-size:10px; color:var(--text-muted);" id="sim-rep-winrate-status">PASS</div>
+                        </div>
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" style="font-size:10px;">Net PnL</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent-green-bright);" id="sim-rep-pnl">$0.00</span>
+                            <div style="font-size:10px; color:var(--text-muted);" id="sim-rep-roi">+0.00% ROI</div>
+                        </div>
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" style="font-size:10px;">Profit Factor</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:#fff;" id="sim-rep-pf">0.00</span>
+                            <div style="font-size:10px; color:var(--text-muted);" id="sim-rep-gross">Gross: +$0 / -$0</div>
+                        </div>
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" style="font-size:10px;">Max Drawdown</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent-red);" id="sim-rep-dd">-$0.00</span>
+                            <div style="font-size:10px; color:var(--text-muted);" id="sim-rep-dd-pct">0.0% Max DD</div>
+                        </div>
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" style="font-size:10px;">Sharpe Ratio</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent-yellow);" id="sim-rep-sharpe">0.00</span>
+                            <div style="font-size:10px; color:var(--text-muted);">Risk Adjusted</div>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--chip-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px;">
+                        <div style="font-size:11px; font-weight:bold; color:var(--text-muted); margin-bottom:8px;">📜 Executed Trade Log Breakdown</div>
+                        <div style="max-height:160px; overflow-y:auto;">
+                            <table class="custom-table" style="font-size:11px;">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Symbol</th>
+                                        <th>Dir</th>
+                                        <th>Entry</th>
+                                        <th>Exit</th>
+                                        <th>Notional</th>
+                                        <th>PnL ($)</th>
+                                        <th>PnL (%)</th>
+                                        <th>Exit Reason</th>
+                                        <th>Entry Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sim-trades-table-body">
+                                    <tr><td colspan="10" style="text-align:center; color:var(--text-muted);">No simulation trades executed yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column (Narrower): Live Trades List & Active Positions -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <!-- Active Portfolio Positions Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Active Portfolio Positions</h3>
+                        <span style="color:var(--accent-green-bright); font-size:11px; font-weight:bold;">⚡ 1s TICKER</span>
+                    </div>
+                    <div style="max-height:220px; overflow-y:auto;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Size</th>
+                                    <th>Entry</th>
+                                    <th>Mark Price</th>
+                                    <th>PnL</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="active-positions-body">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <!-- Order Details -->
-                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; background:var(--chip-bg); padding:10px; border-radius:6px; font-size:11px; margin-bottom:12px;">
-                    <div><span class="metric-label">Entry:</span><br><b id="plan-entry">$0.12450</b></div>
-                    <div><span class="metric-label">Stop Loss:</span><br><b style="color:var(--accent-red);" id="plan-sl">$0.11900</b></div>
-                    <div><span class="metric-label">Take Profit:</span><br><b style="color:var(--accent-green-bright);" id="plan-tp">$0.13800</b></div>
-                    <div><span class="metric-label">R:R Ratio:</span><br><b style="color:var(--accent-yellow);" id="plan-rr">1:2.45</b></div>
+                <!-- Trade History & Profit Logs Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📈 Trade History & Profit Logs</h3>
+                        <span class="badge-pass" style="background:rgba(0, 240, 144, 0.15); color:var(--accent-green-bright); border-color:var(--accent-green-bright);">CLOSED TRADES</span>
+                    </div>
+                    <div id="trade-history-cards-container" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px;">
+                        <!-- Rendered dynamically -->
+                    </div>
                 </div>
 
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">WHY THIS SCORE? (LOGIC REASONS)</div>
-                <ul id="plan-reasons-list" style="margin:0; padding-left:18px; font-size:11px; color:var(--text-main);">
-                    <li>Strong 15m/1h Momentum Alignment</li>
-                    <li>Bullish 5m Order Block retest confirmed</li>
-                    <li>2.5x SMA Volume Spike</li>
-                </ul>
+                <!-- AI Post-Trade Audit Logs Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🤖 AI Post-Trade Audit Logs</h3>
+                        <span class="badge-pass" style="background:rgba(156, 39, 176, 0.2); color:#e1bee7; border-color:#ba68c8;">GEMINI COACH</span>
+                    </div>
+                    <div id="ai-audit-logs-container" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; padding-right:4px;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Task 4: Stream, Gemini & Copilot -->
-        <div class="grid-2">
-            <!-- Gemini Real-Time Intelligence Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">🧠 Gemini Real-Time Intelligence</h3>
-                    <span class="badge-pass" id="gemini-action-badge">BUY</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">Target Pair / Price:</span>
-                    <span class="metric-val" id="gemini-symbol-price" style="color:var(--accent-yellow); font-weight:bold;">BTCUSDT @ $65,420.50</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">15m RSI / SMA50:</span>
-                    <span class="metric-val" id="gemini-rsi_15m">62.4 (Real-time)</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">SMC Pattern:</span>
-                    <span class="metric-val" id="gemini-smc_pattern" style="color:var(--accent-green-bright);">Bullish Order Block & FVG</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">Key Support / Resistance:</span>
-                    <span class="metric-val" id="gemini-sup_res">$63,200 / $67,500</span>
+        <!-- Bottom Row (2 columns): Provider Health & Diagnostics (left) and Alpha Opportunity & Trade Plan (right) -->
+        <div class="dashboard-bottom-row">
+            <!-- Left Column: Provider Health/Status & Candles Readiness Diagnostics -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <!-- Provider Failover Integrity Audit Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📡 Provider Failover Integrity Audit</h3>
+                        <button class="btn btn-accent" onclick="triggerBootstrapRetry()">Retry Data Bootstrap</button>
+                    </div>
+                    <div id="provider-list">
+                        <!-- Rendered dynamically -->
+                    </div>
                 </div>
 
-                <div style="margin-top:10px;">
+                <!-- BTC/USDT Candle Readiness Diagnostics Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🕯️ BTC/USDT Candle Readiness Diagnostics</h3>
+                        <button class="btn btn-danger" onclick="triggerDataReset()">Reset Paper Data</button>
+                    </div>
+                    <div style="max-height:160px; overflow-y:auto;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Timeframe</th>
+                                    <th>Loaded / Required</th>
+                                    <th>Status</th>
+                                    <th>Last Close</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candle-readiness-body">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Diagnostics & Runtime Identity Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔍 Diagnostics & Runtime Identity</h3>
+                        <span style="color:var(--text-muted); font-size:11px;">PID: 10000</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; font-size:11px;">
+                        <div><span class="metric-label">App Version:</span> <span id="identity-app_version" class="metric-val">1.0.0-PROD</span></div>
+                        <div><span class="metric-label">Runtime Engine:</span> <span id="identity-runtime_engine" class="metric-val">AlphaEngine-v2.4</span></div>
+                        <div><span class="metric-label">Active Provider:</span> <span id="identity-active_provider" class="metric-val">BINANCE_FUTURES_WS</span></div>
+                        <div><span class="metric-label">Session UUID:</span> <span id="identity-session_uuid" class="metric-val">c0a80101-8f2e-4d8e-9a1f-3b7c2e9f1a02</span></div>
+                        <div><span class="metric-label">Dispatcher:</span> <span id="identity-execution_dispatcher" class="metric-val">AsyncioCoroutineWorker-01</span></div>
+                        <div><span class="metric-label">DataStore Sync:</span> <span id="identity-data_store_sync" class="metric-val" style="color:var(--accent-green-bright);">OK (Room/DataStore Synced)</span></div>
+                    </div>
+                </div>
+
+                <!-- Terminal Logs & Events Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📜 Terminal Logs & Events</h3>
+                        <span style="color:var(--text-muted); font-size:11px;">AUTO-SCROLLING</span>
+                    </div>
+                    <div class="logs-box" id="logs-container" style="max-height:180px;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Alpha Opportunity Leaderboard and Actionable Trade Plan -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <!-- Alpha Opportunity Scoreboard Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🏆 Alpha Opportunity Scoreboard</h3>
+                        <span class="badge-pass" id="market-regime-badge">TRENDING_BULLISH</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label">Top Candidate:</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent-yellow);" id="top-candidate-name">DOTUSDT</span>
+                            <span style="color:var(--accent-green-bright); font-weight:bold;" id="top-candidate-score">(84.5)</span>
+                        </div>
+                        <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+                            <span class="metric-label" id="high-score-label">High Score Count (>70):</span><br>
+                            <span style="font-size:16px; font-weight:bold; color:#fff;" id="high-score-count">4 Pairs</span>
+                        </div>
+                    </div>
+
+                    <div style="max-height:180px; overflow-y:auto;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Symbol</th>
+                                    <th>Score</th>
+                                    <th>Dir</th>
+                                    <th>Gate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidates-table-body">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Authoritative Trade Plan Detail Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📋 Authoritative Trade Plan Detail</h3>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="btn btn-purple" style="padding:2px 8px; font-size:10px;" onclick="resetToTopCandidate()" title="Sync Trade Plan with #1 Scoreboard Candidate">⚡ Sync #1 Candidate</button>
+                            <span class="badge-long" id="plan-direction-badge">LONG</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <span style="font-size:18px; font-weight:bold; color:#fff;" id="plan-symbol">DOTUSDT</span>
+                        <span style="color:var(--text-muted); font-size:12px;" id="plan-price">@ $6.710 USDT</span>
+                    </div>
+
+                    <!-- Gates Status Table -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">GATES STATUS AUDIT</span>
+                        <span style="font-size:10px; color:var(--accent-yellow); cursor:pointer;" onclick="openGateModal('score')">🔍 Click row to inspect</span>
+                    </div>
+                    <table class="custom-table" style="margin-bottom:12px;">
+                        <tr class="gate-row" onclick="openGateModal('score')" title="Click to view granular Score Gate calculation">
+                            <td id="plan-score-gate-label">Score Gate (>=70.0) <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
+                            <td><span class="badge-pass" id="plan-score-gate">PASS (84.5)</span></td>
+                        </tr>
+                        <tr class="gate-row" onclick="openGateModal('trend')" title="Click to view Trend Alignment metrics">
+                            <td>Trend Alignment Gate <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
+                            <td><span class="badge-pass" id="plan-trend-gate">PASS (EMA 20 > 50)</span></td>
+                        </tr>
+                        <tr class="gate-row" onclick="openGateModal('liquidity')" title="Click to view Liquidity & Depth score">
+                            <td>Liquidity Gate (> $50M) <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
+                            <td><span class="badge-pass" id="plan-liquidity-gate">PASS (92/100)</span></td>
+                        </tr>
+                        <tr class="gate-row" onclick="openGateModal('duplicate')" title="Click to view Duplicate Guard rule detail">
+                            <td>Duplicate Guard Gate <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
+                            <td><span class="badge-pass" id="plan-duplicate-gate">PASS (0 duplicate positions)</span></td>
+                        </tr>
+                    </table>
+
+                    <!-- Alpha Score Breakdown Inspector -->
+                    <div style="background:var(--chip-bg); border:1px solid var(--card-border); border-radius:6px; padding:10px; margin-bottom:12px; transition: all 0.3s ease;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:11px; font-weight:bold; color:var(--accent-yellow);">📊 ALPHA SCORE BREAKDOWN INSPECTOR</span>
+                            <span style="font-size:12px; font-weight:bold; color:var(--accent-green-bright);" id="inspector-total-score">84.5 / 100</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;" id="score-breakdown-list">
+                            <!-- Populated dynamically when clicking candidates -->
+                        </div>
+                    </div>
+
+                    <div style="background:rgba(41,98,255,0.1); border:1px solid var(--accent-blue); padding:8px 10px; border-radius:6px; font-size:11px; color:#90caf9; margin-bottom:12px;">
+                        ℹ️ <b>DUPLICATE GUARD:</b> Active. Prevents opening duplicate positions on same symbol.
+                    </div>
+
+                    <!-- Order Details -->
+                    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; background:var(--chip-bg); padding:10px; border-radius:6px; font-size:11px; margin-bottom:12px;">
+                        <div><span class="metric-label">Entry:</span><br><b id="plan-entry">$0.12450</b></div>
+                        <div><span class="metric-label">Stop Loss:</span><br><b style="color:var(--accent-red);" id="plan-sl">$0.11900</b></div>
+                        <div><span class="metric-label">Take Profit:</span><br><b style="color:var(--accent-green-bright);" id="plan-tp">$0.13800</b></div>
+                        <div><span class="metric-label">R:R Ratio:</span><br><b style="color:var(--accent-yellow);" id="plan-rr">1:2.45</b></div>
+                    </div>
+
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">WHY THIS SCORE? (LOGIC REASONS)</div>
+                    <ul id="plan-reasons-list" style="margin:0; padding-left:18px; font-size:11px; color:var(--text-main);">
+                        <li>Strong 15m/1h Momentum Alignment</li>
+                        <li>Bullish 5m Order Block retest confirmed</li>
+                        <li>2.5x SMA Volume Spike</li>
+                    </ul>
+                </div>
+
+                <!-- Gemini Real-Time Intelligence Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🧠 Gemini Real-Time Intelligence</h3>
+                        <span class="badge-pass" id="gemini-action-badge">BUY</span>
+                    </div>
                     <div class="metric-row">
-                        <span class="metric-label">AI Confidence Meter:</span>
-                        <span class="metric-val" id="gemini-sentiment">78% Confidence</span>
+                        <span class="metric-label">Target Pair / Price:</span>
+                        <span class="metric-val" id="gemini-symbol-price" style="color:var(--accent-yellow); font-weight:bold;">BTCUSDT @ $65,420.50</span>
                     </div>
-                    <div class="meter-bar">
-                        <div class="meter-fill-bull" id="gemini-meter-fill" style="width: 78%;"></div>
+                    <div class="metric-row">
+                        <span class="metric-label">15m RSI / SMA50:</span>
+                        <span class="metric-val" id="gemini-rsi_15m">62.4 (Real-time)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">SMC Pattern:</span>
+                        <span class="metric-val" id="gemini-smc_pattern" style="color:var(--accent-green-bright);">Bullish Order Block & FVG</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Key Support / Resistance:</span>
+                        <span class="metric-val" id="gemini-sup_res">$63,200 / $67,500</span>
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <div class="metric-row">
+                            <span class="metric-label">AI Confidence Meter:</span>
+                            <span class="metric-val" id="gemini-sentiment">78% Confidence</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill-bull" id="gemini-meter-fill" style="width: 78%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:10px; background:var(--chip-bg); padding:8px 10px; border-radius:6px; font-size:11px; border-left:3px solid var(--accent-green-bright);" id="gemini-bullish-reason">
+                        <b>Bullish Drivers:</b> Strong price velocity with momentum support above SMA50.
+                    </div>
+                    <div style="margin-top:6px; background:var(--chip-bg); padding:8px 10px; border-radius:6px; font-size:11px; border-left:3px solid var(--accent-red);" id="gemini-bearish-risk">
+                        <b>Bearish Risks:</b> Potential resistance pullbacks if RSI reaches overbought threshold.
                     </div>
                 </div>
-
-                <div style="margin-top:10px; background:var(--chip-bg); padding:8px 10px; border-radius:6px; font-size:11px; border-left:3px solid var(--accent-green-bright);" id="gemini-bullish-reason">
-                    <b>Bullish Drivers:</b> Strong price velocity with momentum support above SMA50.
-                </div>
-                <div style="margin-top:6px; background:var(--chip-bg); padding:8px 10px; border-radius:6px; font-size:11px; border-left:3px solid var(--accent-red);" id="gemini-bearish-risk">
-                    <b>Bearish Risks:</b> Potential resistance pullbacks if RSI reaches overbought threshold.
-                </div>
-            </div>
-
-            <!-- Stream Cards & Pipeline Logs -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">📡 Live Stream Feed (10 Major Pairs)</h3>
-                    <span id="stream-status-badge" style="color:var(--accent-green-bright); font-size:11px;">⚡ WEBSOCKET ACTIVE</span>
-                </div>
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">REAL-TIME SCANNER & EXECUTION LOGS:</div>
-                <div class="logs-box" id="stream-logs-box" style="max-height:120px; margin-bottom:12px; font-size:11px; border:1px solid rgba(0, 240, 144, 0.2);">
-                    <div style="color:var(--text-muted);">Initializing live stream scanner feed...</div>
-                </div>
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">PAIR TICKERS & CANDIDATE SCORES:</div>
-                <div class="stream-grid" id="stream-grid">
-                    <!-- Rendered dynamically -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Task 5: Active Portfolio & Positions -->
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-header">
-                <h3 class="card-title">📊 Active Portfolio Positions</h3>
-                <span style="color:var(--accent-green-bright); font-size:11px; font-weight:bold;">⚡ 1s HIGH-FREQUENCY TICKER</span>
-            </div>
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Side</th>
-                        <th>Size</th>
-                        <th>Entry Price</th>
-                        <th>Mark Price (Live Ticker)</th>
-                        <th>Margin / Lev</th>
-                        <th>Unrealized PnL</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="active-positions-body">
-                    <!-- Rendered dynamically -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Trade History & Profit Logs Section -->
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-header">
-                <h3 class="card-title">📈 Trade History & Profit Logs</h3>
-                <span class="badge-pass" style="background:rgba(0, 240, 144, 0.15); color:var(--accent-green-bright); border-color:var(--accent-green-bright);">CLOSED TRADES AUDIT</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-                Historical log of completed paper positions with realized Profit/Loss metrics, ROI %, exit triggers, and Gemini quantitative post-mortem insights.
-            </div>
-            <div id="trade-history-cards-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; max-height:450px; overflow-y:auto; padding-right:4px;">
-                <!-- Rendered dynamically -->
-            </div>
-        </div>
-
-        <!-- AI Post-Trade Audit Logs Section -->
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-header">
-                <h3 class="card-title">🤖 AI Post-Trade Audit Logs</h3>
-                <span class="badge-pass" style="background:rgba(156, 39, 176, 0.2); color:#e1bee7; border-color:#ba68c8;">GEMINI 1.5 FLASH COACH</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-                Automated quantitative post-mortems generated for every closed trade analyzing entry performance, missed signals, indicator recommendations, and macro win-rate optimization.
-            </div>
-            <div id="ai-audit-logs-container" style="display:flex; flex-direction:column; gap:12px; max-height:480px; overflow-y:auto; padding-right:4px;">
-                <!-- Rendered dynamically -->
             </div>
         </div>
 
