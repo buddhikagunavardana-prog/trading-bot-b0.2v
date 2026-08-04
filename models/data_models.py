@@ -14,10 +14,12 @@ class MarketRegime(str, Enum):
 class CryptoTicker:
     symbol: str
     price: float
-    change_24h_pct: float
+    change_24h_pct: float = 0.0
     high_24h: float = 0.0
     low_24h: float = 0.0
     volume_24h: float = 0.0
+    bid: float = 0.0
+    ask: float = 0.0
 
 @dataclass
 class StrategySignal:
