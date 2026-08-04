@@ -1,0 +1,7 @@
+Regime,TradeCount,WinRate,ProfitFactor,NetPnL,MaxDrawdownPct,BestStrategy
+STRONG_BULL_TREND,15,0.733,2.80,680.00,2.10,baseline_trend_follow
+WEAK_BULL_TREND,10,0.600,1.90,320.00,3.40,trend_pullback
+STRONG_BEAR_TREND,8,0.750,2.60,410.00,2.50,baseline_trend_follow
+RANGE,5,0.600,1.50,110.00,4.20,range_reversal
+HIGH_VOLATILITY,4,0.500,1.20,40.00,5.80,momentum_continuation
+UNSTABLE,0,0.000,0.00,0.00,0.00,NONE

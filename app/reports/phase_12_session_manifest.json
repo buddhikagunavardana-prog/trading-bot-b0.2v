@@ -1,0 +1,19 @@
+{
+  "sessionId": "SESS_OBS_20260729_001",
+  "sessionStartTimestamp": 1785251120000,
+  "applicationVersion": "1.0.0-PHASE12",
+  "strategyVersion": "v1.0.0",
+  "databaseSchemaVersion": 1,
+  "initialPaperBalance": 10000.0,
+  "quoteAsset": "USDT",
+  "configuredSymbols": [
+    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
+    "ADA/USDT", "DOGE/USDT", "AVAX/USDT", "DOT/USDT", "MATIC/USDT"
+  ],
+  "activeSymbolsCount": 10,
+  "liveOrderExecutionDisabled": true,
+  "riskEngineEnforced": true,
+  "portfolioManagerEnforced": true,
+  "killSwitchState": "DEACTIVATED",
+  "telegramNotificationEnabled": true
+}

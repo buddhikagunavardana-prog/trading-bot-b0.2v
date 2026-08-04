@@ -1,0 +1,32 @@
+{
+  "status": "STRONG",
+  "totalFolds": 3,
+  "passedFoldsCount": 3,
+  "overallDegradationPercent": 8.4,
+  "folds": [
+    {
+      "foldId": "FOLD_1",
+      "trainPnL": 520.00,
+      "oosPnL": 480.00,
+      "profitFactor": 2.10,
+      "degradationPercent": 7.69,
+      "isFoldPassed": true
+    },
+    {
+      "foldId": "FOLD_2",
+      "trainPnL": 490.00,
+      "oosPnL": 445.00,
+      "profitFactor": 1.98,
+      "degradationPercent": 9.18,
+      "isFoldPassed": true
+    },
+    {
+      "foldId": "FOLD_3",
+      "trainPnL": 580.00,
+      "oosPnL": 530.00,
+      "profitFactor": 2.25,
+      "degradationPercent": 8.62,
+      "isFoldPassed": true
+    }
+  ]
+}

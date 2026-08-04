@@ -1,0 +1,4 @@
+Symbol,TradeCount,WinRate,ProfitFactor,Expectancy,NetPnL,MaxDrawdownPct,TotalFees
+BTCUSDT,20,0.700,2.35,45.20,904.00,3.10,21.50
+ETHUSDT,14,0.643,1.95,32.10,449.40,4.20,13.80
+SOLUSDT,8,0.625,1.75,15.80,127.10,5.10,6.80

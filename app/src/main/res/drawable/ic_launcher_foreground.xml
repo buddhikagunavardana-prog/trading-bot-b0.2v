@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Candlestick chart background elements -->
+    <path
+        android:fillColor="#3334D399"
+        android:pathData="M32,38h4v20h-4z M52,30h4v28h-4z M72,42h4v16h-4z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#34D399"
+        android:strokeWidth="1.5"
+        android:pathData="M34,32v32 M54,24v40 M74,36v28" />
+
+    <!-- AI Bot Helmet / Head -->
+    <path
+        android:pathData="M30,48 C30,36 38,28 54,28 C70,28 78,36 78,48 L78,64 C78,72 70,76 54,76 C38,76 30,72 30,64 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="30"
+                android:startY="28"
+                android:endX="78"
+                android:endY="76"
+                android:type="linear">
+                <item android:color="#FF6366F1" android:offset="0.0" />
+                <item android:color="#FF4338CA" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Bot Visor Screen -->
+    <path
+        android:fillColor="#FF07090E"
+        android:pathData="M36,44 C36,40 42,38 54,38 C66,38 72,40 72,44 L72,56 C72,60 66,62 54,62 C42,62 36,60 36,56 Z" />
+
+    <!-- Glowing Visor AI Wave / Eyes -->
+    <path
+        android:fillColor="#FF34D399"
+        android:pathData="M40,50 h8 v3 h-8 z M60,50 h8 v3 h-8 z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF34D399"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M42,51 L48,47 L54,53 L60,46 L66,51" />
+
+    <!-- Antenna Signal -->
+    <path
+        android:fillColor="#FF34D399"
+        android:pathData="M52,20 h4 v8 h-4 z" />
+    <path
+        android:fillColor="#FF818CF8"
+        android:pathData="M54,18m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
+</vector>

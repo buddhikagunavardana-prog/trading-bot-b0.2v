@@ -1,0 +1,2 @@
+EvaluationId,Symbol,StrategyId,RejectionStage,RejectionReason,RawScore,NormalisedScore
+EVAL_002,ETH/USDT,MEAN_REVERSION,STRATEGY_ENGINE,SCORE_BELOW_CONFIDENCE_THRESHOLD,0.45,0.42

@@ -1,0 +1,70 @@
+{
+  "timestamp": 1704067200000,
+  "status": "PASSED",
+  "totalTests": 24,
+  "passedTests": 24,
+  "failedTests": 0,
+  "skippedTests": 0,
+  "testSuites": [
+    {
+      "name": "StrategyEngineTest",
+      "tests": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "name": "TrendPullbackStrategyTest",
+      "tests": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "name": "BreakoutRetestStrategyTest",
+      "tests": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "name": "SmcComponentsAndStrategyTest",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "name": "RangeReversalStrategyTest",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "MomentumContinuationStrategyTest",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "StrategyPortfolioManagerTest",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "PortfolioIntegrationTest",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "BacktestEngineTest",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "WalkForwardValidationTest",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0
+    }
+  ]
+}

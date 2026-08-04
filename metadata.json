@@ -1,0 +1,6 @@
+{
+  "name": "CryptoBot AI",
+  "description": "AI-powered cryptocurrency trading bot and real-time market intelligence dashboard with paper trading simulation and risk management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

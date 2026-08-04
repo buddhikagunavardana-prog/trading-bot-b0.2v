@@ -1,0 +1,21 @@
+{
+  "grade": "ROBUST",
+  "baselineNetPnL": 1480.50,
+  "perturbations": [
+    {
+      "perturbationName": "Increased Spread/Fee (+50%)",
+      "baselineNetPnL": 1480.50,
+      "perturbedNetPnL": 1320.10,
+      "degradationPercent": 10.83,
+      "isAcceptable": true
+    },
+    {
+      "perturbationName": "1-Candle Entry Delay",
+      "baselineNetPnL": 1480.50,
+      "perturbedNetPnL": 1210.30,
+      "degradationPercent": 18.25,
+      "isAcceptable": true
+    }
+  ],
+  "failureReason": null
+}

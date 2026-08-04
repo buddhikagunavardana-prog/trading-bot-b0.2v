@@ -1,0 +1,12 @@
+{
+  "telegramEnabled": true,
+  "botTokenMasked": "bot************",
+  "chatIdAuthorized": true,
+  "attemptedMessages": 3,
+  "deliveredMessages": 3,
+  "failedMessages": 0,
+  "retries": 0,
+  "duplicatesSuppressed": 0,
+  "unauthorizedBlocked": 0,
+  "avgDeliveryLatencyMs": 180
+}

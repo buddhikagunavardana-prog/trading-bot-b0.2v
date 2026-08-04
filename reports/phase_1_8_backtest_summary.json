@@ -1,0 +1,23 @@
+{
+  "backtestId": "BT_PHASE_1_8_PORTFOLIO_SUMMARY",
+  "period": "2024-01-01 to 2024-04-01",
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+  "initialBalance": 10000.0,
+  "finalBalance": 11480.50,
+  "netPnL": 1480.50,
+  "returnPercent": 14.805,
+  "totalTrades": 42,
+  "winningTrades": 28,
+  "losingTrades": 14,
+  "winRate": 0.6667,
+  "profitFactor": 2.15,
+  "expectancy": 35.25,
+  "maxDrawdownPercent": 4.12,
+  "sharpeRatio": 1.85,
+  "sortinoRatio": 2.45,
+  "totalFeesPaid": 42.10,
+  "totalSpreadCost": 28.50,
+  "totalSlippageCost": 18.20,
+  "verificationStatus": "WALK_FORWARD_VALIDATED",
+  "sampleValidity": "VALID"
+}

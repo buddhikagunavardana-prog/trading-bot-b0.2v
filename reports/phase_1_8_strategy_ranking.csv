@@ -1,0 +1,7 @@
+Rank,StrategyID,WinRate,ProfitFactor,Expectancy,MaxDrawdownPct,SharpeRatio,TradeCount,IsReliable
+1,baseline_trend_follow,0.700,2.40,42.50,3.20,2.10,30,true
+2,smc_liquidity_sweep,0.650,2.20,38.00,3.80,1.95,25,true
+3,trend_pullback,0.640,2.05,34.10,4.10,1.80,28,true
+4,breakout_retest,0.600,1.85,28.50,4.90,1.55,20,false
+5,momentum_continuation,0.580,1.75,24.00,5.20,1.40,18,false
+6,range_reversal,0.550,1.60,19.20,5.80,1.20,15,false
