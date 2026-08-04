@@ -1,7 +1,9 @@
 import asyncio
 import logging
 from datetime import datetime
-from fastapi import FastAPI, Request, BackgroundTasks, Body
+from fastapi import FastAPI, Request, BackgroundTasks, Body, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from api.routes import router
 from services.exchange_api import fetch_live_market_data
@@ -16,6 +18,45 @@ app = FastAPI(
     description="24/7 Trading Bot Backend API & Web Terminal",
     version="2.4.0"
 )
+
+
+# Global exception handlers ensuring 100% valid JSON responses
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"[GLOBAL_ERROR] Exception on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "detail": f"Server Error: {str(exc)}",
+            "message": str(exc)
+        }
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "detail": str(exc.detail),
+            "message": str(exc.detail)
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "detail": f"Validation Error: {str(exc)}",
+            "message": "Invalid request payload parameters"
+        }
+    )
+
 
 # Mount all modular routes
 app.include_router(router)

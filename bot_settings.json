@@ -1,0 +1,8 @@
+{
+  "position_size": 550.0,
+  "default_position_size": 550.0,
+  "leverage": 20,
+  "default_leverage": 20,
+  "score_threshold": 78.5,
+  "threshold": 78.5
+}

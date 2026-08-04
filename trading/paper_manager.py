@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 logger = logging.getLogger("CryptoBot")
 
 STORAGE_FILE = "trades_history.json"
+SETTINGS_FILE = "bot_settings.json"
 
 class PaperTradeManager:
     """
@@ -32,8 +33,46 @@ class PaperTradeManager:
         # Enforce strict Hard Reset on Boot / Startup
         self.hard_reset_storage()
 
+    def _load_settings_from_storage(self):
+        """Loads master bot settings (position size, leverage, score threshold) from bot_settings.json if available."""
+        if os.path.exists(SETTINGS_FILE):
+            try:
+                with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                    sdata = json.load(f)
+                self.default_position_size = float(sdata.get("position_size", sdata.get("default_position_size", 300.0)))
+                self.default_leverage = int(sdata.get("leverage", sdata.get("default_leverage", 10)))
+                self.score_threshold = float(sdata.get("score_threshold", sdata.get("threshold", 70.0)))
+                logger.info(f"[SETTINGS] Loaded persistent master settings from {SETTINGS_FILE}: Size=${self.default_position_size}, Lev={self.default_leverage}x, Thresh={self.score_threshold}")
+                return
+            except Exception as e:
+                logger.warning(f"[SETTINGS] Failed to read {SETTINGS_FILE}: {e}")
+
+        # Default master settings if no file exists yet
+        self.default_position_size = 300.0
+        self.default_leverage = 10
+        self.score_threshold = 70.0
+        self._save_settings_to_storage()
+
+    def _save_settings_to_storage(self):
+        """Persists master bot settings to bot_settings.json."""
+        try:
+            sdata = {
+                "position_size": self.default_position_size,
+                "default_position_size": self.default_position_size,
+                "leverage": self.default_leverage,
+                "default_leverage": self.default_leverage,
+                "score_threshold": self.score_threshold,
+                "threshold": self.score_threshold
+            }
+            with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(sdata, f, indent=2)
+            logger.info(f"[SETTINGS] Saved master settings to {SETTINGS_FILE}")
+        except Exception as e:
+            logger.error(f"[SETTINGS] Failed to save {SETTINGS_FILE}: {e}")
+
     def hard_reset_storage(self):
-        """Hard resets trade history and wallet balance to $10,000 USDT on startup."""
+        """Hard resets trade history and wallet balance to $10,000 USDT on startup while preserving persistent master settings."""
+        self._load_settings_from_storage()
         self.initial_balance = 10000.0
         self.wallet_balance = 10000.0
         self.realized_pnl = 0.0
@@ -43,6 +82,7 @@ class PaperTradeManager:
         self.completed_trades = []
         self.trade_history = []
         self._save_to_storage()
+        self._save_settings_to_storage()
         # Also clean secondary file if it exists
         for fname in ["trades_history.json", "trades_history_v2.json"]:
             try:
@@ -63,7 +103,7 @@ class PaperTradeManager:
                     json.dump(data, f, indent=2)
             except Exception as e:
                 logger.warning(f"Could not overwrite {fname}: {e}")
-        logger.info(f"[STORAGE] Hard reset applied on startup: trades_history.json overwritten with [], wallet reset to ${self.wallet_balance:.2f} USDT, 0 total trades.")
+        logger.info(f"[STORAGE] Hard reset applied on startup: trades_history.json overwritten with [], wallet reset to ${self.wallet_balance:.2f} USDT, master settings preserved (Size=${self.default_position_size}, Lev={self.default_leverage}x, Thresh={self.score_threshold}).")
 
     def _save_to_storage(self):
         """Persists trade history, active positions, score threshold, default position size, leverage, and account balances to trades_history.json."""
@@ -180,6 +220,7 @@ class PaperTradeManager:
     def set_score_threshold(self, value: float) -> float:
         """Updates and persists the minimum score threshold for pipeline gates."""
         self.score_threshold = round(float(value), 1)
+        self._save_settings_to_storage()
         self._save_to_storage()
         return self.score_threshold
 
@@ -208,6 +249,7 @@ class PaperTradeManager:
         if score_threshold is not None and 0.0 <= score_threshold <= 100.0:
             self.score_threshold = round(float(score_threshold), 1)
 
+        self._save_settings_to_storage()
         self._save_to_storage()
         return self.get_master_settings()
 

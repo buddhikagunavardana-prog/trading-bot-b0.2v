@@ -1651,13 +1651,19 @@
                 if (sw) sw.checked = val;
             }
 
-            // Threshold
-            const tVal = (data.score_threshold !== undefined) ? data.score_threshold : (data.threshold !== undefined ? data.threshold : 70.0);
+            // Master Settings & Threshold
+            if (data.master_settings) {
+                applyMasterSettingsToUI(data.master_settings);
+            }
+            const tVal = (data.score_threshold !== undefined) ? data.score_threshold : (data.threshold !== undefined ? data.threshold : (data.master_settings ? data.master_settings.score_threshold : 70.0));
             const badgeElem = document.getElementById('threshold-val-badge');
             if (badgeElem) badgeElem.innerText = tVal.toFixed(1);
 
             const dispElem = document.getElementById('active-threshold-disp');
             if (dispElem) dispElem.innerText = tVal.toFixed(1) + ' / 100';
+
+            const dispSlider = document.getElementById('active-threshold-disp-slider');
+            if (dispSlider) dispSlider.innerText = tVal.toFixed(1);
 
             const numInput = document.getElementById('threshold-num-input');
             if (numInput && document.activeElement !== numInput) numInput.value = tVal;
