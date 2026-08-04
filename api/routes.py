@@ -226,6 +226,14 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
         position_size = float(payload.get("position_size", master_settings.get("position_size", 300.0)))
         leverage = int(payload.get("leverage", master_settings.get("leverage", 10)))
         score_threshold = float(payload.get("score_threshold", master_settings.get("score_threshold", 70.0)))
+        
+        stop_loss_pct_val = payload.get("stop_loss_pct") if payload.get("stop_loss_pct") is not None else payload.get("sl_pct")
+        stop_loss_pct = float(stop_loss_pct_val) if stop_loss_pct_val is not None else None
+
+        take_profit_pct_val = payload.get("take_profit_pct") if payload.get("take_profit_pct") is not None else payload.get("tp_pct")
+        take_profit_pct = float(take_profit_pct_val) if take_profit_pct_val is not None else None
+
+        use_custom_params = bool(payload.get("use_custom_params", True))
         symbols = payload.get("symbols")
 
         report = backtest_engine.run_simulation(
@@ -238,6 +246,9 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
             position_size=position_size,
             leverage=leverage,
             score_threshold=score_threshold,
+            stop_loss_pct=stop_loss_pct,
+            take_profit_pct=take_profit_pct,
+            use_custom_params=use_custom_params,
             symbols=symbols
         )
 

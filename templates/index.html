@@ -738,6 +738,42 @@
 
             </div>
 
+            <!-- Custom Manual Parameter Inputs Row -->
+            <div style="background:rgba(0,0,0,0.3); padding:12px 14px; border-radius:8px; margin-bottom:14px; border:1px solid rgba(100, 181, 246, 0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                    <span style="font-size:12px; font-weight:bold; color:#64b5f6; display:flex; align-items:center; gap:6px;">
+                        ⚙️ Interactive Strategy Overrides & Custom Parameters
+                    </span>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--accent-green-bright); font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" id="sim-use-custom-toggle" checked style="accent-color:var(--accent-green-bright); width:16px; height:16px; cursor:pointer;">
+                        Use Custom Manual Inputs
+                    </label>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+                    <!-- Manual Scoring Threshold -->
+                    <div>
+                        <label style="font-size:11px; font-weight:bold; color:#ffb74d; display:block; margin-bottom:4px;">
+                            🎯 Scoring Threshold (0 - 100)
+                        </label>
+                        <input type="number" id="sim-threshold-input" value="70.0" min="0" max="100" step="0.5" placeholder="70.0" title="Scoring Threshold (0-100)" style="width:100%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; outline:none;">
+                    </div>
+                    <!-- Manual Stop Loss (%) -->
+                    <div>
+                        <label style="font-size:11px; font-weight:bold; color:var(--accent-red); display:block; margin-bottom:4px;">
+                            🛑 Stop Loss (%)
+                        </label>
+                        <input type="number" id="sim-sl-input" value="2.0" min="0.1" max="50" step="0.1" placeholder="2.0" title="Stop Loss (%)" style="width:100%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; outline:none;">
+                    </div>
+                    <!-- Manual Take Profit (%) -->
+                    <div>
+                        <label style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); display:block; margin-bottom:4px;">
+                            🎯 Take Profit (%)
+                        </label>
+                        <input type="number" id="sim-tp-input" value="4.0" min="0.1" max="100" step="0.1" placeholder="4.0" title="Take Profit (%)" style="width:100%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; outline:none;">
+                    </div>
+                </div>
+            </div>
+
             <!-- Custom Date Range Row (Hidden by default) -->
             <div id="sim-custom-date-row" style="display:none; background:rgba(0,0,0,0.3); padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid rgba(255,255,255,0.08);">
                 <div style="display:flex; gap:12px; align-items:center;">
@@ -2840,7 +2876,13 @@
             const size = parseFloat(document.getElementById('sim-size-input').value) || 300.0;
             const leverage = parseInt(document.getElementById('sim-leverage-input').value) || 10;
             
-            const threshVal = currentBotState ? (currentBotState.score_threshold || currentBotState.threshold || 70.0) : 70.0;
+            const useCustom = document.getElementById('sim-use-custom-toggle') ? document.getElementById('sim-use-custom-toggle').checked : true;
+            const threshElem = document.getElementById('sim-threshold-input');
+            const threshVal = threshElem ? (parseFloat(threshElem.value) || 70.0) : (currentBotState ? (currentBotState.score_threshold || currentBotState.threshold || 70.0) : 70.0);
+            const slElem = document.getElementById('sim-sl-input');
+            const slVal = slElem ? (parseFloat(slElem.value) || 2.0) : 2.0;
+            const tpElem = document.getElementById('sim-tp-input');
+            const tpVal = tpElem ? (parseFloat(tpElem.value) || 4.0) : 4.0;
 
             let durationDays = 30;
             let startDate = null;
@@ -2866,7 +2908,10 @@
                         initial_capital: capital,
                         position_size: size,
                         leverage: leverage,
-                        score_threshold: threshVal
+                        score_threshold: threshVal,
+                        stop_loss_pct: slVal,
+                        take_profit_pct: tpVal,
+                        use_custom_params: useCustom
                     })
                 });
 

@@ -100,6 +100,15 @@ class AlphaEngineStrategy(BaseStrategy):
         sl_pct = round(volatility * 1.2, 4)
         tp_pct = round(sl_pct * 1.85, 4)  # Ensure R:R >= 1.85
 
+        use_custom = params.get("use_custom_params", True)
+        if use_custom:
+            custom_sl = params.get("stop_loss_pct")
+            custom_tp = params.get("take_profit_pct")
+            if custom_sl is not None and float(custom_sl) > 0:
+                sl_pct = round(float(custom_sl) / 100.0, 4)
+            if custom_tp is not None and float(custom_tp) > 0:
+                tp_pct = round(float(custom_tp) / 100.0, 4)
+
         if direction == "LONG":
             sl_price = round(current_price * (1.0 - sl_pct), 4)
             tp_price = round(current_price * (1.0 + tp_pct), 4)
@@ -189,8 +198,22 @@ class EMACrossoverStrategy(BaseStrategy):
 
         sl_pct = 0.02
         tp_pct = 0.04
-        sl_price = round(current_price * (0.98 if direction == "LONG" else 1.02), 4)
-        tp_price = round(current_price * (1.04 if direction == "LONG" else 0.96), 4)
+
+        use_custom = params.get("use_custom_params", True)
+        if use_custom:
+            custom_sl = params.get("stop_loss_pct")
+            custom_tp = params.get("take_profit_pct")
+            if custom_sl is not None and float(custom_sl) > 0:
+                sl_pct = round(float(custom_sl) / 100.0, 4)
+            if custom_tp is not None and float(custom_tp) > 0:
+                tp_pct = round(float(custom_tp) / 100.0, 4)
+
+        if direction == "LONG":
+            sl_price = round(current_price * (1.0 - sl_pct), 4)
+            tp_price = round(current_price * (1.0 + tp_pct), 4)
+        else:
+            sl_price = round(current_price * (1.0 + sl_pct), 4)
+            tp_price = round(current_price * (1.0 - tp_pct), 4)
 
         return {
             "signal": signal,
@@ -259,8 +282,22 @@ class MeanReversionStrategy(BaseStrategy):
 
         sl_pct = 0.018
         tp_pct = 0.036
-        sl_price = round(current_price * (0.982 if direction == "LONG" else 1.018), 4)
-        tp_price = round(current_price * (1.036 if direction == "LONG" else 0.964), 4)
+
+        use_custom = params.get("use_custom_params", True)
+        if use_custom:
+            custom_sl = params.get("stop_loss_pct")
+            custom_tp = params.get("take_profit_pct")
+            if custom_sl is not None and float(custom_sl) > 0:
+                sl_pct = round(float(custom_sl) / 100.0, 4)
+            if custom_tp is not None and float(custom_tp) > 0:
+                tp_pct = round(float(custom_tp) / 100.0, 4)
+
+        if direction == "LONG":
+            sl_price = round(current_price * (1.0 - sl_pct), 4)
+            tp_price = round(current_price * (1.0 + tp_pct), 4)
+        else:
+            sl_price = round(current_price * (1.0 + sl_pct), 4)
+            tp_price = round(current_price * (1.0 - tp_pct), 4)
 
         return {
             "signal": signal,
@@ -367,6 +404,9 @@ class BacktestEngine:
         position_size: float = 300.0,
         leverage: int = 10,
         score_threshold: float = 70.0,
+        stop_loss_pct: Optional[float] = None,
+        take_profit_pct: Optional[float] = None,
+        use_custom_params: bool = True,
         symbols: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
@@ -508,7 +548,10 @@ class BacktestEngine:
                 params = {
                     "score_threshold": score_threshold,
                     "leverage": leverage,
-                    "position_size": position_size
+                    "position_size": position_size,
+                    "stop_loss_pct": stop_loss_pct,
+                    "take_profit_pct": take_profit_pct,
+                    "use_custom_params": use_custom_params
                 }
 
                 sig = strategy.analyze_candles(
@@ -660,6 +703,9 @@ class BacktestEngine:
                 "position_size": position_size,
                 "leverage": leverage,
                 "score_threshold": score_threshold,
+                "stop_loss_pct": stop_loss_pct,
+                "take_profit_pct": take_profit_pct,
+                "use_custom_params": use_custom_params,
                 "executed_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
             },
             "equity_curve": equity_curve,
