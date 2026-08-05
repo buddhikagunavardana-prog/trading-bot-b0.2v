@@ -49,6 +49,29 @@ async def health_check():
     return JSONResponse(status_code=200, content={"status": "ok", "service": "CryptoBot AI"})
 
 
+from datetime import datetime, date
+from decimal import Decimal
+
+def to_json_safe(obj: Any) -> Any:
+    if obj is None:
+        return None
+    if isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {str(k): to_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [to_json_safe(item) for item in obj]
+    if hasattr(obj, "dict") and callable(getattr(obj, "dict")):
+        return to_json_safe(obj.dict())
+    if hasattr(obj, "__dict__"):
+        return to_json_safe(obj.__dict__)
+    return str(obj)
+
+
 @router.get("/api/state")
 async def get_bot_state():
     try:
@@ -69,7 +92,7 @@ async def get_bot_state():
                 }
         except Exception as pe:
             logger.error(f"Error updating paper trade summary for bot_state: {pe}")
-        return JSONResponse(status_code=200, content=bot_state)
+        return JSONResponse(status_code=200, content=to_json_safe(bot_state))
     except Exception as e:
         logger.error(f"Error serving bot state: {e}", exc_info=True)
         fallback = {
@@ -94,7 +117,7 @@ async def get_bot_state():
             "candidates": bot_state.get("candidates", []) if isinstance(bot_state, dict) else [],
             "scoreboard": bot_state.get("scoreboard", {}) if isinstance(bot_state, dict) else {}
         }
-        return JSONResponse(status_code=200, content=fallback)
+        return JSONResponse(status_code=200, content=to_json_safe(fallback))
 
 
 @router.get("/api/live-data")
@@ -117,7 +140,7 @@ async def get_live_data():
                 }
         except Exception as pe:
             logger.error(f"Error updating paper trade summary for live_data: {pe}")
-        return JSONResponse(status_code=200, content=live_data)
+        return JSONResponse(status_code=200, content=to_json_safe(live_data))
     except Exception as e:
         logger.error(f"Error serving live data: {e}", exc_info=True)
         fallback = {
@@ -138,7 +161,7 @@ async def get_live_data():
                 "total_trades": 0
             }) if isinstance(live_data, dict) else {}
         }
-        return JSONResponse(status_code=200, content=fallback)
+        return JSONResponse(status_code=200, content=to_json_safe(fallback))
 
 
 @router.post("/api/market-mode")
@@ -186,13 +209,13 @@ async def set_market_mode(payload: Dict[str, Any] = Body(default={})):
         from services.exchange_api import run_alpha_scanner_loop
         asyncio.create_task(run_alpha_scanner_loop())
 
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=200, content=to_json_safe({
             "status": "success",
             "market_mode": new_mode,
             "bot_state": bot_state,
             "live_data": live_data,
             "message": f"Market mode successfully set to {new_mode}"
-        })
+        }))
     except Exception as e:
         logger.error(f"Error setting market mode: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
@@ -203,11 +226,11 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            await websocket.send_json({
+            await websocket.send_json(to_json_safe({
                 "type": "live_update",
                 "live_data": live_data,
                 "bot_state": bot_state
-            })
+            }))
             await asyncio.sleep(1)
     except WebSocketDisconnect:
         pass
@@ -224,13 +247,13 @@ async def terminal_logs_websocket_endpoint(websocket: WebSocket):
         while True:
             all_logs = bot_state.get("recent_logs", [])
             stream_logs = live_data.get("stream_logs", [])
-            await websocket.send_json({
+            await websocket.send_json(to_json_safe({
                 "type": "terminal_logs",
                 "status": "connected",
                 "recent_logs": all_logs,
                 "stream_logs": stream_logs,
                 "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-            })
+            }))
             await asyncio.sleep(1)
     except WebSocketDisconnect:
         pass
@@ -245,13 +268,13 @@ async def get_terminal_logs_endpoint():
     try:
         logs = bot_state.get("recent_logs", [])
         stream_logs = live_data.get("stream_logs", [])
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=200, content=to_json_safe({
             "status": "success",
             "logs": logs,
             "recent_logs": logs,
             "stream_logs": stream_logs,
             "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-        })
+        }))
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
@@ -262,14 +285,14 @@ async def simulation_websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             ms = paper_trade_manager.get_master_settings()
-            await websocket.send_json({
+            await websocket.send_json(to_json_safe({
                 "type": "simulation_state",
                 "status": "connected",
                 "latest_report": bot_state.get("latest_simulation_report", {}),
                 "recent_logs": bot_state.get("recent_logs", []),
                 "active_timeframe": ms.get("timeframe", "15m"),
                 "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-            })
+            }))
             await asyncio.sleep(1)
     except WebSocketDisconnect:
         pass
@@ -281,12 +304,12 @@ async def simulation_websocket_endpoint(websocket: WebSocket):
 async def get_simulation_state():
     try:
         ms = paper_trade_manager.get_master_settings()
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=200, content=to_json_safe({
             "status": "success",
             "latest_report": bot_state.get("latest_simulation_report", {}),
             "recent_logs": bot_state.get("recent_logs", []),
             "active_settings": ms
-        })
+        }))
     except Exception as e:
         logger.error(f"Error fetching simulation state: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
