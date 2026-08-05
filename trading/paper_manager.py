@@ -379,14 +379,20 @@ class PaperTradeManager:
 
     def update_market_prices(self, current_prices: Dict[str, float]) -> List[Dict[str, Any]]:
         closed_events = []
-        import random
         for symbol, pos in list(self.active_positions.items()):
             if symbol in current_prices:
                 mark_price = current_prices[symbol]
             else:
-                prev_price = pos.get("mark_price", pos.get("entry_price", 100.0))
-                noise = random.choice([-1.0, 1.0]) * random.uniform(0.0002, 0.0008)
-                mark_price = round(prev_price * (1.0 + noise), 4 if prev_price < 1.0 else (2 if prev_price > 100 else 3))
+                norm_sym = symbol.replace("=X", "").replace("/", "").replace("-", "").upper()
+                matched = None
+                for k, v in current_prices.items():
+                    if k.replace("=X", "").replace("/", "").replace("-", "").upper() == norm_sym:
+                        matched = float(v)
+                        break
+                if matched is not None:
+                    mark_price = matched
+                else:
+                    mark_price = pos.get("mark_price", pos.get("entry_price", 100.0))
 
             pos["mark_price"] = mark_price
 
@@ -562,68 +568,83 @@ class PaperTradeManager:
         
         self.market_mode = market_mode
 
-        forex_pairs = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X', 'USDCHF=X', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF']
-
         def is_forex_sym(s: str) -> bool:
             if not s:
                 return False
             sym_u = s.upper()
-            return ("USDT" not in sym_u) and ("BTC" not in sym_u or "/" in sym_u) and ("ETH" not in sym_u or "/" in sym_u) and any(f in sym_u for f in ["EUR", "GBP", "JPY", "AUD", "CAD", "NZD", "CHF", "/", "=X"])
+            if "USDT" in sym_u:
+                return False
+            forex_keys = ["EUR", "GBP", "JPY", "AUD", "CAD", "NZD", "CHF", "=X"]
+            return any(k in sym_u for k in forex_keys) or ("/" in sym_u and "BTC" not in sym_u and "ETH" not in sym_u)
 
         pos_list = list(self.active_positions.values())
         if market_mode == "FOREX":
             filtered_pos = [p for p in pos_list if is_forex_sym(p.get("symbol", ""))]
             filtered_trades = [t for t in self.trade_history if is_forex_sym(t.get("symbol", ""))]
-            if not filtered_trades:
-                # Seed default Forex trades history if empty
-                sample_forex = [
-                    {
-                        "id": "th_EURUSD_101", "symbol": "EUR/USD", "direction": "LONG", "side": "LONG",
-                        "entry_price": 1.0850, "exit_price": 1.0892, "position_size_usdt": 5000.0,
-                        "quantity": 4608, "size": 4608, "leverage": "20x", "pnl_value": 193.50,
-                        "realized_pnl": 193.50, "roi_percentage": 7.74, "exit_reason": "TAKE_PROFIT_HIT",
-                        "duration": "01:24:10", "opened_at": "12:15:00 UTC", "closed_at": "13:39:10 UTC"
-                    },
-                    {
-                        "id": "th_GBPUSD_102", "symbol": "GBP/USD", "direction": "SHORT", "side": "SHORT",
-                        "entry_price": 1.2980, "exit_price": 1.2935, "position_size_usdt": 5000.0,
-                        "quantity": 3852, "size": 3852, "leverage": "20x", "pnl_value": 173.25,
-                        "realized_pnl": 173.25, "roi_percentage": 6.93, "exit_reason": "TAKE_PROFIT_HIT",
-                        "duration": "00:45:22", "opened_at": "14:00:00 UTC", "closed_at": "14:45:22 UTC"
-                    },
-                    {
-                        "id": "th_USDJPY_103", "symbol": "USD/JPY", "direction": "LONG", "side": "LONG",
-                        "entry_price": 154.20, "exit_price": 153.85, "position_size_usdt": 5000.0,
-                        "quantity": 32.4, "size": 32.4, "leverage": "20x", "pnl_value": -113.40,
-                        "realized_pnl": -113.40, "roi_percentage": -4.54, "exit_reason": "STOP_LOSS_HIT",
-                        "duration": "00:18:05", "opened_at": "15:10:00 UTC", "closed_at": "15:28:05 UTC"
-                    }
-                ]
-                filtered_trades = sample_forex
         else:
             filtered_pos = [p for p in pos_list if not is_forex_sym(p.get("symbol", ""))]
             filtered_trades = [t for t in self.trade_history if not is_forex_sym(t.get("symbol", ""))]
 
-        metrics = self.get_performance_metrics()
-        total_eq = self.get_total_equity()
-        avail_m = self.get_available_margin()
-        unrealized = self.get_unrealized_pnl()
+        # Mode-specific performance metrics computation
+        total_closed = len(filtered_trades)
+        wins = [t for t in filtered_trades if float(t.get("pnl_value", t.get("realized_pnl", 0.0))) > 0]
+        losses = [t for t in filtered_trades if float(t.get("pnl_value", t.get("realized_pnl", 0.0))) < 0]
+
+        total_wins = len(wins)
+        total_losses = len(losses)
+
+        gross_profits = sum(float(t.get("pnl_value", t.get("realized_pnl", 0.0))) for t in wins)
+        gross_losses = sum(abs(float(t.get("pnl_value", t.get("realized_pnl", 0.0)))) for t in losses)
+
+        mode_realized_pnl = round(gross_profits - gross_losses, 2)
+        win_rate = round((total_wins / total_closed * 100), 1) if total_closed > 0 else 0.0
+
+        if gross_losses > 0:
+            profit_factor = round(gross_profits / gross_losses, 2)
+        elif gross_profits > 0:
+            profit_factor = round(gross_profits, 2)
+        else:
+            profit_factor = 0.0
+
+        overall_roi = round((mode_realized_pnl / self.initial_balance * 100), 2) if self.initial_balance > 0 else 0.0
+
+        unrealized_pnl = round(sum(float(p.get("pnl", 0.0)) for p in filtered_pos), 2)
+        used_margin = round(sum(float(p.get("margin", 0.0)) for p in filtered_pos), 2)
+
+        mode_wallet_balance = round(self.initial_balance + mode_realized_pnl, 2)
+        total_equity = round(mode_wallet_balance + unrealized_pnl, 2)
+        available_margin = round(max(0.0, mode_wallet_balance - used_margin), 2)
+
+        metrics = {
+            "total_trades": total_closed,
+            "total_wins": total_wins,
+            "total_losses": total_losses,
+            "win_rate": win_rate,
+            "net_pnl": mode_realized_pnl,
+            "gross_profits": round(gross_profits, 2),
+            "gross_losses": round(gross_losses, 2),
+            "profit_factor": profit_factor,
+            "overall_roi": overall_roi,
+            "initial_balance": self.initial_balance,
+            "wallet_balance": mode_wallet_balance,
+            "realized_pnl": mode_realized_pnl
+        }
 
         return {
             "market_mode": market_mode,
-            "total_equity": total_eq,
-            "available_margin": avail_m,
-            "unrealized_pnl": unrealized,
-            "realized_pnl": self.realized_pnl,
-            "win_rate": metrics["win_rate"],
-            "total_trades": metrics["total_trades"],
-            "total_wins": metrics["total_wins"],
-            "total_losses": metrics["total_losses"],
-            "net_pnl": metrics["net_pnl"],
-            "gross_profits": metrics["gross_profits"],
-            "gross_losses": metrics["gross_losses"],
-            "profit_factor": metrics["profit_factor"],
-            "overall_roi": metrics["overall_roi"],
+            "total_equity": total_equity,
+            "available_margin": available_margin,
+            "unrealized_pnl": unrealized_pnl,
+            "realized_pnl": mode_realized_pnl,
+            "win_rate": win_rate,
+            "total_trades": total_closed,
+            "total_wins": total_wins,
+            "total_losses": total_losses,
+            "net_pnl": mode_realized_pnl,
+            "gross_profits": round(gross_profits, 2),
+            "gross_losses": round(gross_losses, 2),
+            "profit_factor": profit_factor,
+            "overall_roi": overall_roi,
             "active_positions": filtered_pos,
             "completed_trades": filtered_trades[-10:],
             "trade_history": filtered_trades,

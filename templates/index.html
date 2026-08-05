@@ -281,6 +281,26 @@
             gap: 8px;
         }
 
+        /* AI Audit Logs Container & Cards */
+        #ai-audit-logs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+            box-sizing: border-box;
+            width: 100%;
+            flex: 1 1 auto;
+            min-height: 100px;
+        }
+
+        #ai-audit-logs-container > div {
+            box-sizing: border-box;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
         /* Metric Key-Value Rows */
         .metric-row {
             display: flex;
@@ -1413,7 +1433,7 @@
                         <h3 class="card-title">🤖 AI Post-Trade Audit Logs</h3>
                         <span class="badge-pass" style="background:rgba(156, 39, 176, 0.2); color:#e1bee7; border-color:#ba68c8;">GEMINI COACH</span>
                     </div>
-                    <div id="ai-audit-logs-container" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; padding-right:4px;">
+                    <div id="ai-audit-logs-container" style="display:flex; flex-direction:column; gap:10px; max-height:400px; overflow-y:auto; padding-right:4px; box-sizing:border-box; width:100%;">
                         <!-- Rendered dynamically -->
                     </div>
                 </div>
@@ -1500,12 +1520,12 @@
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
                         <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
                             <span class="metric-label">Top Candidate:</span><br>
-                            <span style="font-size:16px; font-weight:bold; color:var(--accent-yellow);" id="top-candidate-name">DOTUSDT</span>
-                            <span style="color:var(--accent-green-bright); font-weight:bold;" id="top-candidate-score">(84.5)</span>
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent-yellow);" id="top-candidate-name">--</span>
+                            <span style="color:var(--accent-green-bright); font-weight:bold;" id="top-candidate-score">(--)</span>
                         </div>
                         <div style="background:var(--chip-bg); padding:10px; border-radius:6px; border:1px solid var(--card-border);">
                             <span class="metric-label" id="high-score-label">High Score Count (>70):</span><br>
-                            <span style="font-size:16px; font-weight:bold; color:#fff;" id="high-score-count">4 Pairs</span>
+                            <span style="font-size:16px; font-weight:bold; color:#fff;" id="high-score-count">--</span>
                         </div>
                     </div>
 
@@ -1538,8 +1558,8 @@
                         </div>
                     </div>
                     <div style="margin-bottom:12px;">
-                        <span style="font-size:18px; font-weight:bold; color:#fff;" id="plan-symbol">DOTUSDT</span>
-                        <span style="color:var(--text-muted); font-size:12px;" id="plan-price">@ $6.710 USDT</span>
+                        <span style="font-size:18px; font-weight:bold; color:#fff;" id="plan-symbol">--</span>
+                        <span style="color:var(--text-muted); font-size:12px;" id="plan-price">--</span>
                     </div>
 
                     <!-- Gates Status Table -->
@@ -1550,19 +1570,19 @@
                     <table class="custom-table" style="margin-bottom:12px;">
                         <tr class="gate-row" onclick="openGateModal('score')" title="Click to view granular Score Gate calculation">
                             <td id="plan-score-gate-label">Score Gate (>=70.0) <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                            <td><span class="badge-pass" id="plan-score-gate">PASS (84.5)</span></td>
+                            <td><span class="badge-pass" id="plan-score-gate">--</span></td>
                         </tr>
                         <tr class="gate-row" onclick="openGateModal('trend')" title="Click to view Trend Alignment metrics">
                             <td>Trend Alignment Gate <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                            <td><span class="badge-pass" id="plan-trend-gate">PASS (EMA 20 > 50)</span></td>
+                            <td><span class="badge-pass" id="plan-trend-gate">--</span></td>
                         </tr>
                         <tr class="gate-row" onclick="openGateModal('liquidity')" title="Click to view Liquidity & Depth score">
                             <td>Liquidity Gate (> $50M) <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                            <td><span class="badge-pass" id="plan-liquidity-gate">PASS (92/100)</span></td>
+                            <td><span class="badge-pass" id="plan-liquidity-gate">--</span></td>
                         </tr>
                         <tr class="gate-row" onclick="openGateModal('duplicate')" title="Click to view Duplicate Guard rule detail">
                             <td>Duplicate Guard Gate <span style="font-size:10px; color:var(--accent-yellow);">🔍</span></td>
-                            <td><span class="badge-pass" id="plan-duplicate-gate">PASS (0 duplicate positions)</span></td>
+                            <td><span class="badge-pass" id="plan-duplicate-gate">--</span></td>
                         </tr>
                     </table>
 
@@ -1570,7 +1590,7 @@
                     <div style="background:var(--chip-bg); border:1px solid var(--card-border); border-radius:6px; padding:10px; margin-bottom:12px; transition: all 0.3s ease;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                             <span style="font-size:11px; font-weight:bold; color:var(--accent-yellow);">📊 ALPHA SCORE BREAKDOWN INSPECTOR</span>
-                            <span style="font-size:12px; font-weight:bold; color:var(--accent-green-bright);" id="inspector-total-score">84.5 / 100</span>
+                            <span style="font-size:12px; font-weight:bold; color:var(--accent-green-bright);" id="inspector-total-score">--</span>
                         </div>
                         <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;" id="score-breakdown-list">
                             <!-- Populated dynamically when clicking candidates -->
@@ -1583,10 +1603,10 @@
 
                     <!-- Order Details -->
                     <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; background:var(--chip-bg); padding:10px; border-radius:6px; font-size:11px; margin-bottom:12px;">
-                        <div><span class="metric-label">Entry:</span><br><b id="plan-entry">$0.12450</b></div>
-                        <div><span class="metric-label">Stop Loss:</span><br><b style="color:var(--accent-red);" id="plan-sl">$0.11900</b></div>
-                        <div><span class="metric-label">Take Profit:</span><br><b style="color:var(--accent-green-bright);" id="plan-tp">$0.13800</b></div>
-                        <div><span class="metric-label">R:R Ratio:</span><br><b style="color:var(--accent-yellow);" id="plan-rr">1:2.45</b></div>
+                        <div><span class="metric-label">Entry:</span><br><b id="plan-entry">--</b></div>
+                        <div><span class="metric-label">Stop Loss:</span><br><b style="color:var(--accent-red);" id="plan-sl">--</b></div>
+                        <div><span class="metric-label">Take Profit:</span><br><b style="color:var(--accent-green-bright);" id="plan-tp">--</b></div>
+                        <div><span class="metric-label">R:R Ratio:</span><br><b style="color:var(--accent-yellow);" id="plan-rr">--</b></div>
                     </div>
 
                     <!-- Direct Order Placement Trigger Button & Status Indicator -->
@@ -1599,9 +1619,7 @@
 
                     <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">WHY THIS SCORE? (LOGIC REASONS)</div>
                     <ul id="plan-reasons-list" style="margin:0; padding-left:18px; font-size:11px; color:var(--text-main);">
-                        <li>Strong 15m/1h Momentum Alignment</li>
-                        <li>Bullish 5m Order Block retest confirmed</li>
-                        <li>2.5x SMA Volume Spike</li>
+                        <li>Loading live market signal data...</li>
                     </ul>
                 </div>
 
@@ -1613,7 +1631,7 @@
                     </div>
                     <div class="metric-row">
                         <span class="metric-label">Target Pair / Price:</span>
-                        <span class="metric-val" id="gemini-symbol-price" style="color:var(--accent-yellow); font-weight:bold;">BTCUSDT @ $65,420.50</span>
+                        <span class="metric-val" id="gemini-symbol-price" style="color:var(--accent-yellow); font-weight:bold;">--</span>
                     </div>
                     <div class="metric-row">
                         <span class="metric-label">15m RSI / SMA50:</span>
@@ -1786,13 +1804,17 @@
             const posBody = document.getElementById('active-positions-body');
             if (!posBody) return;
 
-            if (!positions || !Array.isArray(positions) || positions.length === 0) {
+            const filteredPositions = (positions && Array.isArray(positions))
+                ? positions.filter(p => activeMarketMode === 'FOREX' ? isForexSymbol(p.symbol) : !isForexSymbol(p.symbol))
+                : [];
+
+            if (filteredPositions.length === 0) {
                 posBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No active portfolio positions</td></tr>';
                 previousMarkPrices = {};
                 return;
             }
 
-            const currentSymbols = positions.map(p => p.symbol);
+            const currentSymbols = filteredPositions.map(p => p.symbol);
             const existingRows = Array.from(posBody.querySelectorAll('tr[id^="pos-row-"]'));
             const existingSymbols = existingRows.map(el => el.id.replace('pos-row-', ''));
 
@@ -1800,7 +1822,7 @@
                 existingSymbols.every((sym, idx) => sym === currentSymbols[idx]);
 
             if (!structureMatches) {
-                posBody.innerHTML = positions.map(p => {
+                posBody.innerHTML = filteredPositions.map(p => {
                     const markStr = typeof p.mark_price === 'number' ? (p.mark_price < 1.0 ? p.mark_price.toFixed(4) : p.mark_price.toLocaleString('en-US', {minimumFractionDigits: 2})) : (p.mark_price || p.entry_price);
                     const entryStr = typeof p.entry_price === 'number' ? (p.entry_price < 1.0 ? p.entry_price.toFixed(4) : p.entry_price.toLocaleString('en-US', {minimumFractionDigits: 2})) : p.entry_price;
                     const pnlVal = p.pnl !== undefined ? p.pnl : 0.0;
@@ -1825,7 +1847,7 @@
                 }).join('');
             }
 
-            positions.forEach(p => {
+            filteredPositions.forEach(p => {
                 const markCell = document.getElementById('mark-price-' + p.symbol);
                 const pnlCell = document.getElementById('pos-pnl-' + p.symbol);
                 const newMarkNum = typeof p.mark_price === 'number' ? p.mark_price : parseFloat(p.mark_price);
@@ -1956,7 +1978,7 @@
                             const sideClass = r.side === 'LONG' ? 'badge-long' : 'badge-short';
 
                             return `
-                                <div style="background:var(--chip-bg); border:1px solid var(--card-border); border-left:4px solid ${isWin ? 'var(--accent-green-bright)' : 'var(--accent-red)'}; border-radius:6px; padding:12px;">
+                                <div style="background:var(--chip-bg); border:1px solid var(--card-border); border-left:4px solid ${isWin ? 'var(--accent-green-bright)' : 'var(--accent-red)'}; border-radius:6px; padding:12px; box-sizing:border-box; flex-shrink:0; width:100%;">
                                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
                                         <div>
                                             <span style="font-size:14px; font-weight:bold; color:#fff;">${r.symbol}</span>
@@ -2308,21 +2330,23 @@
                     });
                 }
 
-                const topSym = (data.scoreboard && data.scoreboard.top_candidate) ? data.scoreboard.top_candidate : (data.candidates && data.candidates[0] ? data.candidates[0].symbol : 'DOTUSDT');
-                const topScore = (data.scoreboard && data.scoreboard.top_score) ? data.scoreboard.top_score : (data.candidates && data.candidates[0] ? data.candidates[0].score : '84.5');
-                const highCount = (data.candidates) ? data.candidates.filter(r => r.score >= tVal).length : (data.scoreboard ? data.scoreboard.high_score_count : 4);
+                const isForex = (data.market_mode === 'FOREX' || (currentBotState && currentBotState.market_mode === 'FOREX'));
+                const defaultSym = isForex ? 'EURUSD=X' : 'BTCUSDT';
+                const topSym = (data.scoreboard && data.scoreboard.top_candidate) ? data.scoreboard.top_candidate : (data.candidates && data.candidates[0] ? data.candidates[0].symbol : defaultSym);
+                const topScore = (data.scoreboard && data.scoreboard.top_score) ? data.scoreboard.top_score : (data.candidates && data.candidates[0] ? data.candidates[0].score : '--');
+                const highCount = (data.candidates) ? data.candidates.filter(r => r.score >= tVal).length : (data.scoreboard ? data.scoreboard.high_score_count : 0);
 
                 const topCandElem = document.getElementById('top-candidate-name');
                 if (topCandElem) topCandElem.innerText = topSym;
 
                 const topScoreElem = document.getElementById('top-candidate-score');
-                if (topScoreElem) topScoreElem.innerText = '(' + topScore + ')';
+                if (topScoreElem) topScoreElem.innerText = topScore !== '--' ? '(' + topScore + ')' : '(--)';
 
                 const highCountElem = document.getElementById('high-score-count');
                 if (highCountElem) highCountElem.innerText = highCount + ' Pairs';
 
                 const regimeElem = document.getElementById('market-regime-badge');
-                if (regimeElem) regimeElem.innerText = data.scoreboard ? data.scoreboard.market_regime : 'TRENDING_BULLISH';
+                if (regimeElem) regimeElem.innerText = (data.scoreboard && data.scoreboard.market_regime) ? data.scoreboard.market_regime : 'LIVE_FEED';
 
                 // Candidates table
                 const candBody = document.getElementById('candidates-table-body');
@@ -2409,12 +2433,16 @@
             const container = document.getElementById('trade-history-cards-container');
             if (!container) return;
 
-            if (!tradeHistory || tradeHistory.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; padding:16px; text-align:center; background:var(--chip-bg); border-radius:6px;">No closed trades recorded yet. Active positions will appear here once closed.</div>`;
+            const filtered = (tradeHistory && Array.isArray(tradeHistory))
+                ? tradeHistory.filter(t => activeMarketMode === 'FOREX' ? isForexSymbol(t.symbol) : !isForexSymbol(t.symbol))
+                : [];
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; padding:16px; text-align:center; background:var(--chip-bg); border-radius:6px;">No closed trades recorded yet for ${activeMarketMode}.</div>`;
                 return;
             }
 
-            container.innerHTML = tradeHistory.map(t => {
+            container.innerHTML = filtered.map(t => {
                 const cardId = t.id || ('th_' + (t.symbol || 'PAIR') + '_' + Math.random().toString(36).substr(2, 5));
                 const symbol = t.symbol || 'N/A';
                 const assetName = symbol.replace('USDT', '');
@@ -2559,12 +2587,16 @@
             const container = document.getElementById('ai-audit-logs-container');
             if (!container) return;
 
-            if (!tradeHistory || tradeHistory.length === 0) {
-                container.innerHTML = `<div style="color:var(--text-muted); font-size:12px; padding:16px; text-align:center; background:var(--chip-bg); border-radius:6px;">No closed trade audit logs generated yet. Completed trades will appear here automatically.</div>`;
+            const filtered = (tradeHistory && Array.isArray(tradeHistory))
+                ? tradeHistory.filter(t => activeMarketMode === 'FOREX' ? isForexSymbol(t.symbol) : !isForexSymbol(t.symbol))
+                : [];
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="color:var(--text-muted); font-size:12px; padding:16px; text-align:center; background:var(--chip-bg); border-radius:6px;">No closed trade audit logs generated yet for ${activeMarketMode}. Completed trades will appear here automatically.</div>`;
                 return;
             }
 
-            container.innerHTML = tradeHistory.map(t => {
+            container.innerHTML = filtered.map(t => {
                 const auditId = (t.id || ('th_' + (t.symbol || 'PAIR') + '_' + Math.random().toString(36).substr(2, 5))) + '_audit';
                 const symbol = t.symbol || 'N/A';
                 const assetName = symbol.replace('USDT', '');
@@ -2615,7 +2647,7 @@
                 const btnText = isExpanded ? '▲ Hide Audit' : '▼ View Audit';
 
                 return `
-                    <div id="audit-card-${auditId}" style="background:${cardBg}; border:${cardBorder}; border-radius:8px; padding:12px 16px; box-shadow:0 3px 10px rgba(0,0,0,0.3); transition:all 0.25s ease;">
+                    <div id="audit-card-${auditId}" style="background:${cardBg}; border:${cardBorder}; border-radius:8px; padding:12px 16px; box-shadow:0 3px 10px rgba(0,0,0,0.3); transition:all 0.25s ease; box-sizing:border-box; flex-shrink:0; width:100%;">
                         
                         <!-- Collapsed Summary Bar (Default State) -->
                         <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleAuditCard('${auditId}')">
@@ -2717,7 +2749,8 @@
         function isForexSymbol(s) {
             if (!s) return false;
             const sym = String(s).toUpperCase();
-            return sym.includes('=X') || (!sym.includes('USDT') && !sym.includes('BTC/') && !sym.includes('ETH/') && (sym.includes('EUR') || sym.includes('GBP') || sym.includes('JPY') || sym.includes('AUD') || sym.includes('CAD') || sym.includes('NZD') || sym.includes('CHF') || sym.includes('/')));
+            if (sym.includes('USDT')) return false;
+            return sym.includes('=X') || sym.includes('/USD') || sym.includes('EUR') || sym.includes('GBP') || sym.includes('JPY') || sym.includes('AUD') || sym.includes('CAD') || sym.includes('NZD') || sym.includes('CHF') || (sym.includes('/') && !sym.includes('BTC') && !sym.includes('ETH'));
         }
 
         async function switchMarketMode(mode) {
@@ -2761,6 +2794,29 @@
 
             userManualSelection = false;
             activeSelectedSymbol = null;
+
+            // Clear opposite mode tables, cards & positions immediately on mode switch
+            const posBody = document.getElementById('active-positions-body');
+            if (posBody) posBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No active portfolio positions</td></tr>';
+
+            const thContainer = document.getElementById('trade-history-cards-container');
+            if (thContainer) thContainer.innerHTML = `<div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; padding:16px; text-align:center; background:var(--chip-bg); border-radius:6px;">No closed trades recorded yet for ${targetMode}.</div>`;
+
+            const auditContainer = document.getElementById('ai-audit-logs-container');
+            if (auditContainer) auditContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:16px;">No post-trade audit reports generated yet for ${targetMode}.</div>`;
+
+            const candBody = document.getElementById('candidates-table-body');
+            if (candBody) candBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading candidates for ${targetMode}...</td></tr>`;
+
+            const streamGrid = document.getElementById('stream-grid');
+            if (streamGrid) streamGrid.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:16px;">Scanning live tickers for ${targetMode}...</div>`;
+
+            const topCandElem = document.getElementById('top-candidate-name');
+            if (topCandElem) topCandElem.innerText = targetMode === 'FOREX' ? 'EURUSD=X' : 'BTCUSDT';
+            const topScoreElem = document.getElementById('top-candidate-score');
+            if (topScoreElem) topScoreElem.innerText = '(--)';
+            const highCountElem = document.getElementById('high-score-count');
+            if (highCountElem) highCountElem.innerText = '0 Pairs';
 
             try {
                 const res = await fetch('/api/market-mode', {
@@ -2833,9 +2889,9 @@
 
             let candidates = null;
             if (latestLiveData && latestLiveData.alpha_scanner_results && latestLiveData.alpha_scanner_results.length > 0) {
-                candidates = latestLiveData.alpha_scanner_results;
+                candidates = latestLiveData.alpha_scanner_results.filter(c => activeMarketMode === 'FOREX' ? isForexSymbol(c.symbol) : !isForexSymbol(c.symbol));
             } else if (currentBotState && currentBotState.candidates) {
-                candidates = currentBotState.candidates;
+                candidates = currentBotState.candidates.filter(c => activeMarketMode === 'FOREX' ? isForexSymbol(c.symbol) : !isForexSymbol(c.symbol));
             }
 
             if (candidates) {
@@ -3172,9 +3228,15 @@
 
         function resetToTopCandidate() {
             userManualSelection = false;
-            const topSymbol = (latestLiveData && latestLiveData.alpha_scanner_results && latestLiveData.alpha_scanner_results.length > 0)
-                ? latestLiveData.alpha_scanner_results[0].symbol
-                : (currentBotState && currentBotState.scoreboard ? currentBotState.scoreboard.top_candidate : 'DOTUSDT');
+            const isFx = activeMarketMode === 'FOREX';
+            let topPair = null;
+            if (latestLiveData && latestLiveData.alpha_scanner_results) {
+                topPair = latestLiveData.alpha_scanner_results.find(c => isFx ? isForexSymbol(c.symbol) : !isForexSymbol(c.symbol));
+            }
+            if (!topPair && currentBotState && currentBotState.candidates) {
+                topPair = currentBotState.candidates.find(c => isFx ? isForexSymbol(c.symbol) : !isForexSymbol(c.symbol));
+            }
+            const topSymbol = topPair ? topPair.symbol : (isFx ? 'EURUSD=X' : 'BTCUSDT');
             selectCandidate(topSymbol, false);
         }
 
@@ -3280,11 +3342,16 @@
             }
 
             let targetSymbol = symbol;
+            const isFx = activeMarketMode === 'FOREX';
             if (!userManualSelection) {
-                const topSym = (latestLiveData && latestLiveData.alpha_scanner_results && latestLiveData.alpha_scanner_results.length > 0)
-                    ? latestLiveData.alpha_scanner_results[0].symbol
-                    : (currentBotState && currentBotState.scoreboard ? currentBotState.scoreboard.top_candidate : symbol);
-                if (topSym) targetSymbol = topSym;
+                let topPair = null;
+                if (latestLiveData && latestLiveData.alpha_scanner_results) {
+                    topPair = latestLiveData.alpha_scanner_results.find(c => isFx ? isForexSymbol(c.symbol) : !isForexSymbol(c.symbol));
+                }
+                if (!topPair && currentBotState && currentBotState.candidates) {
+                    topPair = currentBotState.candidates.find(c => isFx ? isForexSymbol(c.symbol) : !isForexSymbol(c.symbol));
+                }
+                if (topPair) targetSymbol = topPair.symbol;
             }
 
             activeSelectedSymbol = targetSymbol;

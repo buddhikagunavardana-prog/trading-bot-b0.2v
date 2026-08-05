@@ -1,5 +1,9 @@
 import asyncio
 import logging
+import os
+import threading
+import time
+import requests
 from datetime import datetime
 from fastapi import FastAPI, Request, BackgroundTasks, Body, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -18,6 +22,28 @@ app = FastAPI(
     description="24/7 Trading Bot Backend API & Web Terminal",
     version="2.4.0"
 )
+
+
+def keep_alive_worker():
+    """Background daemon worker thread that periodically pings /api/live-data to prevent Render sleep."""
+    logger.info("Starting background keep-alive daemon worker thread...")
+    time.sleep(10)
+    while True:
+        try:
+            base_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("APP_URL") or "http://127.0.0.1:8000"
+            target_url = f"{base_url.rstrip('/')}/api/live-data"
+            response = requests.get(target_url, timeout=10)
+            logger.info(f"[KEEP_ALIVE] Ping to {target_url} returned HTTP {response.status_code}")
+        except Exception as e:
+            logger.warning(f"[KEEP_ALIVE] Keep-alive ping failed gracefully: {e}")
+        
+        time.sleep(300)
+
+
+def start_keep_alive_thread():
+    thread = threading.Thread(target=keep_alive_worker, daemon=True, name="KeepAliveThread")
+    thread.start()
+    logger.info("Keep-alive background daemon thread initialized.")
 
 
 # Global exception handlers ensuring 100% valid JSON responses
@@ -95,6 +121,7 @@ trading_background_loop = trading_logic_loop
 async def startup_event():
     logger.info("Enforcing startup hard reset for paper trading storage...")
     paper_trade_manager.hard_reset_storage()
+    start_keep_alive_thread()
     asyncio.create_task(trading_logic_loop())
     from services.exchange_api import prefetch_all_timeframes_cache
     asyncio.create_task(prefetch_all_timeframes_cache())

@@ -72,24 +72,47 @@ def to_json_safe(obj: Any) -> Any:
     return str(obj)
 
 
+def is_forex_symbol_check(s: str) -> bool:
+    if not s:
+        return False
+    s_u = str(s).upper()
+    if "USDT" in s_u:
+        return False
+    forex_keys = ["EUR", "GBP", "JPY", "AUD", "CAD", "NZD", "CHF", "=X"]
+    return any(k in s_u for k in forex_keys) or ("/" in s_u and "BTC" not in s_u and "ETH" not in s_u)
+
+
 @router.get("/api/state")
 async def get_bot_state():
     try:
-        if "market_mode" not in bot_state:
-            bot_state["market_mode"] = "CRYPTO"
+        active_mode = bot_state.get("market_mode", "CRYPTO") if isinstance(bot_state, dict) else "CRYPTO"
+        bot_state["market_mode"] = active_mode
         try:
-            summary = paper_trade_manager.get_summary(market_mode=bot_state["market_mode"])
+            summary = paper_trade_manager.get_summary(market_mode=active_mode)
             bot_state["active_positions"] = summary.get("active_positions", [])
             bot_state["trade_history"] = summary.get("trade_history", [])
-            if "wallet" not in bot_state or not bot_state["wallet"]:
-                bot_state["wallet"] = {
-                    "total_equity": summary.get("total_equity", 10000.0),
-                    "available_margin": summary.get("available_margin", 10000.0),
-                    "unrealized_pnl": summary.get("unrealized_pnl", 0.0),
-                    "realized_pnl": summary.get("realized_pnl", 0.0),
-                    "win_rate": summary.get("win_rate", 0.0),
-                    "total_trades": summary.get("total_trades", 0),
-                }
+            bot_state["wallet"] = {
+                "total_equity": summary.get("total_equity", 10000.0),
+                "available_margin": summary.get("available_margin", 10000.0),
+                "unrealized_pnl": summary.get("unrealized_pnl", 0.0),
+                "realized_pnl": summary.get("realized_pnl", 0.0),
+                "win_rate": summary.get("win_rate", 0.0),
+                "total_trades": summary.get("total_trades", 0),
+                "total_wins": summary.get("total_wins", 0),
+                "total_losses": summary.get("total_losses", 0),
+                "net_pnl": summary.get("net_pnl", 0.0),
+                "profit_factor": summary.get("profit_factor", 0.0),
+                "overall_roi": summary.get("overall_roi", 0.0)
+            }
+            bot_state["performance_metrics"] = summary.get("metrics", {})
+
+            # Filter candidates and major_pairs in bot_state strictly by active_mode
+            is_fx = (active_mode == "FOREX")
+            if "candidates" in bot_state and isinstance(bot_state["candidates"], list):
+                bot_state["candidates"] = [c for c in bot_state["candidates"] if (is_forex_symbol_check(c.get("symbol", "")) if is_fx else not is_forex_symbol_check(c.get("symbol", "")))]
+            if "major_pairs" in bot_state and isinstance(bot_state["major_pairs"], list):
+                bot_state["major_pairs"] = [m for m in bot_state["major_pairs"] if (is_forex_symbol_check(m.get("symbol", "")) if is_fx else not is_forex_symbol_check(m.get("symbol", "")))]
+
         except Exception as pe:
             logger.error(f"Error updating paper trade summary for bot_state: {pe}")
         return JSONResponse(status_code=200, content=to_json_safe(bot_state))
@@ -123,21 +146,34 @@ async def get_bot_state():
 @router.get("/api/live-data")
 async def get_live_data():
     try:
-        if "market_mode" not in live_data:
-            live_data["market_mode"] = bot_state.get("market_mode", "CRYPTO")
+        active_mode = bot_state.get("market_mode", "CRYPTO") if isinstance(bot_state, dict) else "CRYPTO"
+        live_data["market_mode"] = active_mode
         try:
-            summary = paper_trade_manager.get_summary(market_mode=live_data["market_mode"])
+            summary = paper_trade_manager.get_summary(market_mode=active_mode)
             live_data["active_positions"] = summary.get("active_positions", [])
             live_data["trade_history"] = summary.get("trade_history", [])
-            if "wallet" not in live_data or not live_data["wallet"]:
-                live_data["wallet"] = {
-                    "total_equity": summary.get("total_equity", 10000.0),
-                    "available_margin": summary.get("available_margin", 10000.0),
-                    "unrealized_pnl": summary.get("unrealized_pnl", 0.0),
-                    "realized_pnl": summary.get("realized_pnl", 0.0),
-                    "win_rate": summary.get("win_rate", 0.0),
-                    "total_trades": summary.get("total_trades", 0),
-                }
+            live_data["wallet"] = {
+                "total_equity": summary.get("total_equity", 10000.0),
+                "available_margin": summary.get("available_margin", 10000.0),
+                "unrealized_pnl": summary.get("unrealized_pnl", 0.0),
+                "realized_pnl": summary.get("realized_pnl", 0.0),
+                "win_rate": summary.get("win_rate", 0.0),
+                "total_trades": summary.get("total_trades", 0),
+                "total_wins": summary.get("total_wins", 0),
+                "total_losses": summary.get("total_losses", 0),
+                "net_pnl": summary.get("net_pnl", 0.0),
+                "profit_factor": summary.get("profit_factor", 0.0),
+                "overall_roi": summary.get("overall_roi", 0.0)
+            }
+            live_data["performance_metrics"] = summary.get("metrics", {})
+
+            # Filter alpha_scanner_results and trade_history_reports strictly by active_mode
+            is_fx = (active_mode == "FOREX")
+            if "alpha_scanner_results" in live_data and isinstance(live_data["alpha_scanner_results"], list):
+                live_data["alpha_scanner_results"] = [a for a in live_data["alpha_scanner_results"] if (is_forex_symbol_check(a.get("symbol", "")) if is_fx else not is_forex_symbol_check(a.get("symbol", "")))]
+            if "trade_history_reports" in live_data and isinstance(live_data["trade_history_reports"], list):
+                live_data["trade_history_reports"] = [r for r in live_data["trade_history_reports"] if (is_forex_symbol_check(r.get("symbol", "")) if is_fx else not is_forex_symbol_check(r.get("symbol", "")))]
+
         except Exception as pe:
             logger.error(f"Error updating paper trade summary for live_data: {pe}")
         return JSONResponse(status_code=200, content=to_json_safe(live_data))
@@ -205,10 +241,20 @@ async def set_market_mode(request: Request = None, payload: Dict[str, Any] = Bod
         if new_mode not in ["CRYPTO", "FOREX"]:
             new_mode = "CRYPTO"
 
+        is_fx = (new_mode == "FOREX")
         if isinstance(bot_state, dict):
             bot_state["market_mode"] = new_mode
+            if "candidates" in bot_state and isinstance(bot_state["candidates"], list):
+                bot_state["candidates"] = [c for c in bot_state["candidates"] if (is_forex_symbol_check(c.get("symbol", "")) if is_fx else not is_forex_symbol_check(c.get("symbol", "")))]
+            if "major_pairs" in bot_state and isinstance(bot_state["major_pairs"], list):
+                bot_state["major_pairs"] = [m for m in bot_state["major_pairs"] if (is_forex_symbol_check(m.get("symbol", "")) if is_fx else not is_forex_symbol_check(m.get("symbol", "")))]
+
         if isinstance(live_data, dict):
             live_data["market_mode"] = new_mode
+            if "alpha_scanner_results" in live_data and isinstance(live_data["alpha_scanner_results"], list):
+                live_data["alpha_scanner_results"] = [a for a in live_data["alpha_scanner_results"] if (is_forex_symbol_check(a.get("symbol", "")) if is_fx else not is_forex_symbol_check(a.get("symbol", "")))]
+            if "trade_history_reports" in live_data and isinstance(live_data["trade_history_reports"], list):
+                live_data["trade_history_reports"] = [r for r in live_data["trade_history_reports"] if (is_forex_symbol_check(r.get("symbol", "")) if is_fx else not is_forex_symbol_check(r.get("symbol", "")))]
 
         try:
             summary = paper_trade_manager.get_summary(market_mode=new_mode)
