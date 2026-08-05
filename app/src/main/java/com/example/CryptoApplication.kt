@@ -19,17 +19,27 @@ class CryptoApplication : Application() {
             val env = BuildConfig.SENTRY_ENVIRONMENT.ifEmpty { "production" }
             val sampleRate = BuildConfig.SENTRY_TRACES_SAMPLE_RATE.toDoubleOrNull() ?: 1.0
 
-            if (dsn.isNotEmpty() && !dsn.contains("examplePublicKey")) {
-                SentryAndroid.init(this) { options: SentryAndroidOptions ->
-                    options.dsn = dsn
-                    options.environment = env
-                    options.tracesSampleRate = sampleRate
-                    options.profilesSampleRate = 1.0
-                    options.isEnableAutoSessionTracking = true
-                    options.isAttachStacktrace = true
-                    options.isAttachThreads = true
+            val isPlaceholder = dsn.isBlank() ||
+                    dsn.contains("examplePublicKey") ||
+                    dsn.contains("your_sentry_dsn_here") ||
+                    dsn.contains("YOUR_SENTRY_DSN") ||
+                    !dsn.startsWith("http")
+
+            if (!isPlaceholder) {
+                try {
+                    SentryAndroid.init(this) { options: SentryAndroidOptions ->
+                        options.dsn = dsn
+                        options.environment = env
+                        options.tracesSampleRate = sampleRate
+                        options.profilesSampleRate = 1.0
+                        options.isEnableAutoSessionTracking = true
+                        options.isAttachStacktrace = true
+                        options.isAttachThreads = true
+                    }
+                    Log.i("CryptoApplication", "Sentry initialized successfully for environment: $env")
+                } catch (se: Throwable) {
+                    Log.w("CryptoApplication", "Sentry initialization skipped due to invalid DSN: ${se.message}")
                 }
-                Log.i("CryptoApplication", "Sentry initialized successfully for environment: $env")
             } else {
                 Log.w("CryptoApplication", "Sentry DSN is empty or placeholder. Skipping Sentry initialization.")
             }
