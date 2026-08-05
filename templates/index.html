@@ -3809,6 +3809,7 @@
                 } else {
                     alert('Simulation failed: ' + (data.detail || data.message || 'Unknown error'));
                 }
+                await fetchState();
             } catch(e) {
                 console.error('Error running simulation:', e);
                 alert('Error running strategy simulation: ' + e.message);
@@ -4637,48 +4638,53 @@
 
         // Initialize WebSocket stream & continuous 1-second polling fallback
         window.addEventListener('DOMContentLoaded', () => {
-            renderPaperTradingSuiteUI();
-            const simSuiteCard = document.getElementById('strategy-simulation-card');
-            if (simSuiteCard) {
-                simSuiteCard.addEventListener('dblclick', (e) => openFullscreenSimulationViewer(e));
-            }
+            try {
+                renderPaperTradingSuiteUI();
+                loadBacktestStrategies();
 
-            const cryptoToggleBtn = document.getElementById('market-toggle-crypto');
-            if (cryptoToggleBtn) {
-                cryptoToggleBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    switchMarketMode('CRYPTO');
-                });
-            }
+                const simSuiteCard = document.getElementById('strategy-simulation-card');
+                if (simSuiteCard) {
+                    simSuiteCard.addEventListener('dblclick', (e) => openFullscreenSimulationViewer(e));
+                }
 
-            const forexToggleBtn = document.getElementById('market-toggle-forex');
-            if (forexToggleBtn) {
-                forexToggleBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    switchMarketMode('FOREX');
-                });
-            }
+                const cryptoToggleBtn = document.getElementById('market-toggle-crypto');
+                if (cryptoToggleBtn) {
+                    cryptoToggleBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        switchMarketMode('CRYPTO');
+                    });
+                }
 
-            const runSimBtn = document.getElementById('btn-run-simulation');
-            if (runSimBtn) {
-                runSimBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    runBacktestSimulation(e);
-                });
+                const forexToggleBtn = document.getElementById('market-toggle-forex');
+                if (forexToggleBtn) {
+                    forexToggleBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        switchMarketMode('FOREX');
+                    });
+                }
+
+                const runSimBtn = document.getElementById('btn-run-simulation');
+                if (runSimBtn) {
+                    runSimBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        runBacktestSimulation(e);
+                    });
+                }
+
+                initLiveStreamWebSocket();
+                initTerminalLogsStream();
+                fetchState();
+                fetchLiveData();
+
+                setInterval(fetchLiveData, 1000);
+                setInterval(fetchState, 2000);
+            } catch (err) {
+                console.error("Initialization error guarded:", err);
             }
         });
-        renderPaperTradingSuiteUI();
-        loadBacktestStrategies();
-        initLiveStreamWebSocket();
-        initTerminalLogsStream();
-        fetchState();
-        fetchLiveData();
-
-        setInterval(fetchLiveData, 1000);
-        setInterval(fetchState, 2000);
     </script>
 </body>
 </html>
