@@ -2117,7 +2117,9 @@
         async function fetchState() {
             try {
                 const res = await fetch('/api/state');
+                if (!res.ok) return;
                 const data = await res.json();
+                if (!data) return;
                 currentBotState = data;
                 if (data.master_settings) {
                     applyMasterSettingsToUI(data.master_settings);
@@ -2203,167 +2205,203 @@
         }
 
         function renderState(data) {
-            // Time
-            document.getElementById('time-display').innerText = 'UTC: ' + new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+            try {
+                if (!data) return;
 
-            // Wallet & Metrics
-            if (data.wallet) {
-                document.getElementById('total-equity').innerText = '$' + data.wallet.total_equity.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' USDT';
-                document.getElementById('avail-margin').innerText = '$' + data.wallet.available_margin.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' USDT';
-                
-                const unPnl = data.wallet.unrealized_pnl;
-                const unPnlElem = document.getElementById('unrealized-pnl');
-                unPnlElem.innerText = (unPnl >= 0 ? '+' : '') + '$' + unPnl.toFixed(2) + ' USDT';
-                unPnlElem.style.color = unPnl >= 0 ? 'var(--accent-green-bright)' : 'var(--accent-red)';
+                // Time
+                const timeElem = document.getElementById('time-display');
+                if (timeElem) timeElem.innerText = 'UTC: ' + new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
 
-                document.getElementById('realized-pnl').innerText = '+$' + data.wallet.realized_pnl.toFixed(2) + ' USDT';
-                document.getElementById('win-rate').innerText = data.wallet.win_rate + '% (' + data.wallet.total_trades + ' trades)';
-            }
+                // Wallet & Metrics
+                if (data.wallet) {
+                    const eqElem = document.getElementById('total-equity');
+                    if (eqElem && data.wallet.total_equity !== undefined) eqElem.innerText = '$' + data.wallet.total_equity.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' USDT';
+                    
+                    const marginElem = document.getElementById('avail-margin');
+                    if (marginElem && data.wallet.available_margin !== undefined) marginElem.innerText = '$' + data.wallet.available_margin.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' USDT';
+                    
+                    const unPnl = data.wallet.unrealized_pnl || 0.0;
+                    const unPnlElem = document.getElementById('unrealized-pnl');
+                    if (unPnlElem) {
+                        unPnlElem.innerText = (unPnl >= 0 ? '+' : '') + '$' + unPnl.toFixed(2) + ' USDT';
+                        unPnlElem.style.color = unPnl >= 0 ? 'var(--accent-green-bright)' : 'var(--accent-red)';
+                    }
 
-            updatePerformanceMetricsUI(data.wallet, data.performance_metrics);
+                    const realPnlElem = document.getElementById('realized-pnl');
+                    if (realPnlElem && data.wallet.realized_pnl !== undefined) realPnlElem.innerText = '+$' + data.wallet.realized_pnl.toFixed(2) + ' USDT';
 
-            // Switches
-            for (const [key, val] of Object.entries(data.settings)) {
-                const sw = document.getElementById('sw-' + key);
-                if (sw) sw.checked = val;
-            }
+                    const winRateElem = document.getElementById('win-rate');
+                    if (winRateElem && data.wallet.win_rate !== undefined) winRateElem.innerText = data.wallet.win_rate + '% (' + (data.wallet.total_trades || 0) + ' trades)';
+                }
 
-            // Master Settings & Threshold
-            if (data.master_settings) {
-                applyMasterSettingsToUI(data.master_settings);
-            }
-            const tVal = (data.score_threshold !== undefined) ? data.score_threshold : (data.threshold !== undefined ? data.threshold : (data.master_settings ? data.master_settings.score_threshold : 70.0));
-            const badgeElem = document.getElementById('threshold-val-badge');
-            if (badgeElem) badgeElem.innerText = tVal.toFixed(1);
+                updatePerformanceMetricsUI(data.wallet, data.performance_metrics);
 
-            const dispElem = document.getElementById('active-threshold-disp');
-            if (dispElem) dispElem.innerText = tVal.toFixed(1) + ' / 100';
+                // Switches
+                if (data.settings && typeof data.settings === 'object') {
+                    for (const [key, val] of Object.entries(data.settings)) {
+                        const sw = document.getElementById('sw-' + key);
+                        if (sw) sw.checked = val;
+                    }
+                }
 
-            const dispSlider = document.getElementById('active-threshold-disp-slider');
-            if (dispSlider) dispSlider.innerText = tVal.toFixed(1);
+                // Master Settings & Threshold
+                if (data.master_settings) {
+                    applyMasterSettingsToUI(data.master_settings);
+                }
+                const tVal = (data.score_threshold !== undefined) ? data.score_threshold : (data.threshold !== undefined ? data.threshold : (data.master_settings ? data.master_settings.score_threshold : 70.0));
+                const badgeElem = document.getElementById('threshold-val-badge');
+                if (badgeElem) badgeElem.innerText = tVal.toFixed(1);
 
-            const numInput = document.getElementById('threshold-num-input');
-            if (numInput && document.activeElement !== numInput) numInput.value = tVal;
+                const dispElem = document.getElementById('active-threshold-disp');
+                if (dispElem) dispElem.innerText = tVal.toFixed(1) + ' / 100';
 
-            const sliderElem = document.getElementById('threshold-slider');
-            if (sliderElem && document.activeElement !== sliderElem) sliderElem.value = tVal;
+                const dispSlider = document.getElementById('active-threshold-disp-slider');
+                if (dispSlider) dispSlider.innerText = tVal.toFixed(1);
 
-            // Diagnostics
-            for (const [k, v] of Object.entries(data.runtime_identity)) {
-                const elem = document.getElementById('identity-' + k);
-                if (elem) elem.innerText = v;
-            }
+                const numInput = document.getElementById('threshold-num-input');
+                if (numInput && document.activeElement !== numInput) numInput.value = tVal;
 
-            // Providers
-            const provContainer = document.getElementById('provider-list');
-            provContainer.innerHTML = data.providers.map(p => `
-                <div class="metric-row" style="border-bottom:1px solid rgba(42,46,57,0.3); padding:4px 0;">
-                    <span>${p.name}:</span>
-                    <div>
-                        <span class="${p.status === 'SUCCESS' ? 'badge-pass' : 'badge-fail'}">${p.status}</span>
-                        <span style="color:var(--text-muted); font-size:11px; margin-left:6px;">${p.ping_ms}ms</span>
-                    </div>
-                </div>
-            `).join('');
+                const sliderElem = document.getElementById('threshold-slider');
+                if (sliderElem && document.activeElement !== sliderElem) sliderElem.value = tVal;
 
-            // Candle readiness
-            if (data.candles_readiness) {
-                renderCandleReadiness(data.candles_readiness);
-            }
+                // Diagnostics
+                if (data.runtime_identity && typeof data.runtime_identity === 'object') {
+                    for (const [k, v] of Object.entries(data.runtime_identity)) {
+                        const elem = document.getElementById('identity-' + k);
+                        if (elem) elem.innerText = v;
+                    }
+                }
 
-            // Scoreboard & Candidates
-            const threshStr = (tVal % 1 === 0) ? tVal.toFixed(0) : tVal.toFixed(1);
-            const highScoreLabelElem = document.getElementById('high-score-label');
-            if (highScoreLabelElem) highScoreLabelElem.innerText = 'High Score Count (>' + threshStr + '):';
+                // Providers
+                if (data.providers && Array.isArray(data.providers)) {
+                    const provContainer = document.getElementById('provider-list');
+                    if (provContainer) {
+                        provContainer.innerHTML = data.providers.map(p => `
+                            <div class="metric-row" style="border-bottom:1px solid rgba(42,46,57,0.3); padding:4px 0;">
+                                <span>${p.name}:</span>
+                                <div>
+                                    <span class="${p.status === 'SUCCESS' ? 'badge-pass' : 'badge-fail'}">${p.status}</span>
+                                    <span style="color:var(--text-muted); font-size:11px; margin-left:6px;">${p.ping_ms}ms</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
 
-            if (data.candidates && Array.isArray(data.candidates)) {
-                data.candidates.sort((a, b) => {
-                    if (b.score !== a.score) return b.score - a.score;
-                    return a.symbol.localeCompare(b.symbol);
-                });
-                data.candidates.forEach((c, idx) => {
-                    c.rank = idx + 1;
-                });
-            }
+                // Candle readiness
+                if (data.candles_readiness) {
+                    renderCandleReadiness(data.candles_readiness);
+                }
 
-            const topSym = (data.scoreboard && data.scoreboard.top_candidate) ? data.scoreboard.top_candidate : (data.candidates && data.candidates[0] ? data.candidates[0].symbol : 'DOTUSDT');
-            const topScore = (data.scoreboard && data.scoreboard.top_score) ? data.scoreboard.top_score : (data.candidates && data.candidates[0] ? data.candidates[0].score : '84.5');
-            const highCount = (data.candidates) ? data.candidates.filter(r => r.score >= tVal).length : (data.scoreboard ? data.scoreboard.high_score_count : 4);
+                // Scoreboard & Candidates
+                const threshStr = (tVal % 1 === 0) ? tVal.toFixed(0) : tVal.toFixed(1);
+                const highScoreLabelElem = document.getElementById('high-score-label');
+                if (highScoreLabelElem) highScoreLabelElem.innerText = 'High Score Count (>' + threshStr + '):';
 
-            document.getElementById('top-candidate-name').innerText = topSym;
-            document.getElementById('top-candidate-score').innerText = '(' + topScore + ')';
-            document.getElementById('high-score-count').innerText = highCount + ' Pairs';
-            document.getElementById('market-regime-badge').innerText = data.scoreboard ? data.scoreboard.market_regime : 'TRENDING_BULLISH';
+                if (data.candidates && Array.isArray(data.candidates)) {
+                    data.candidates.sort((a, b) => {
+                        if (b.score !== a.score) return b.score - a.score;
+                        return a.symbol.localeCompare(b.symbol);
+                    });
+                    data.candidates.forEach((c, idx) => {
+                        c.rank = idx + 1;
+                    });
+                }
 
-            // Candidates table
-            const candBody = document.getElementById('candidates-table-body');
-            if (candBody && data.candidates) {
-                candBody.innerHTML = data.candidates.map((c, idx) => {
-                    const isPlaced = (data.active_positions && Array.isArray(data.active_positions) && data.active_positions.some(p => p.symbol === c.symbol)) ||
-                                     (latestLiveData && Array.isArray(latestLiveData.active_positions) && latestLiveData.active_positions.some(p => p.symbol === c.symbol));
-                    const statusBadge = isPlaced
-                        ? '<span class="badge-pass" style="background:rgba(0,240,144,0.2); color:#00f090; font-size:10px;">🟢 PLACED</span>'
-                        : (c.gate === 'PASS'
-                            ? '<span class="badge-pass" style="background:rgba(100,181,246,0.2); color:#64b5f6; font-size:10px;">⚡ AUTO-READY</span>'
-                            : '<span class="badge-fail" style="font-size:10px;">BLOCKED</span>');
-                    const px = c.price || c.entry || 0;
-                    return `
-                        <tr style="cursor:pointer;" onclick="selectCandidate('${c.symbol}', true)">
-                            <td>#${c.rank !== undefined ? c.rank : (idx + 1)}</td>
-                            <td><b>${c.symbol}</b></td>
-                            <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
-                            <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
-                            <td>${statusBadge}</td>
-                            <td>
-                                <button class="btn" style="padding:2px 8px; font-size:10px; background:linear-gradient(135deg, #00f090, #089981); color:#000; font-weight:bold; border:none; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); executeTradeForPair('${c.symbol}', '${c.direction}', ${px}, ${c.sl}, ${c.tp}, ${c.score});">
-                                    ⚡ Trade
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            }
+                const topSym = (data.scoreboard && data.scoreboard.top_candidate) ? data.scoreboard.top_candidate : (data.candidates && data.candidates[0] ? data.candidates[0].symbol : 'DOTUSDT');
+                const topScore = (data.scoreboard && data.scoreboard.top_score) ? data.scoreboard.top_score : (data.candidates && data.candidates[0] ? data.candidates[0].score : '84.5');
+                const highCount = (data.candidates) ? data.candidates.filter(r => r.score >= tVal).length : (data.scoreboard ? data.scoreboard.high_score_count : 4);
 
-            // Streams
-            const streamGrid = document.getElementById('stream-grid');
-            if (streamGrid && data.streams) {
-                streamGrid.innerHTML = data.streams.map(s => `
-                    <div class="stream-card" onclick="selectCandidate('${s.symbol}', true)" style="cursor:pointer;">
-                        <div class="stream-symbol">${s.symbol}</div>
-                        <div style="font-weight:bold;">$${s.price}</div>
-                        <div style="color:${s.change_24h.startsWith('+') ? 'var(--accent-green-bright)' : 'var(--accent-red)'}; font-size:11px;">${s.change_24h}</div>
-                    </div>
-                `).join('');
-            }
+                const topCandElem = document.getElementById('top-candidate-name');
+                if (topCandElem) topCandElem.innerText = topSym;
 
-            // Gemini
-            if (data.gemini_intelligence) {
-                document.getElementById('gemini-rsi_15m').innerText = (data.gemini_intelligence.rsi_15m || '58.4') + ' (Neutral-Bullish)';
-                document.getElementById('gemini-rsi_1h').innerText = data.gemini_intelligence.rsi_1h || '62.1';
-                document.getElementById('gemini-crossover').innerText = data.gemini_intelligence.crossover_state || 'EMA 20/50 GOLDEN CROSS';
-                document.getElementById('gemini-sentiment').innerText = (data.gemini_intelligence.bullish_confidence || 78) + '% Bullish Confidence';
-                document.getElementById('gemini-meter-fill').style.width = (data.gemini_intelligence.bullish_confidence || 78) + '%';
-                document.getElementById('gemini-summary').innerText = data.gemini_intelligence.summary || 'Strong momentum structure across 15m/1h timeframes.';
-            }
+                const topScoreElem = document.getElementById('top-candidate-score');
+                if (topScoreElem) topScoreElem.innerText = '(' + topScore + ')';
 
-            // Active Positions
-            if (data && data.active_positions) {
-                renderActivePositions(data.active_positions);
-            }
+                const highCountElem = document.getElementById('high-score-count');
+                if (highCountElem) highCountElem.innerText = highCount + ' Pairs';
 
-            if (data.trade_history) {
-                renderTradeHistoryCards(data.trade_history);
-                renderAIAuditLogsCards(data.trade_history);
-            }
+                const regimeElem = document.getElementById('market-regime-badge');
+                if (regimeElem) regimeElem.innerText = data.scoreboard ? data.scoreboard.market_regime : 'TRENDING_BULLISH';
 
-            // Logs
-            if (data.recent_logs) {
-                renderTerminalLogs(data.recent_logs);
-            }
+                // Candidates table
+                const candBody = document.getElementById('candidates-table-body');
+                if (candBody && data.candidates) {
+                    candBody.innerHTML = data.candidates.map((c, idx) => {
+                        const isPlaced = (data.active_positions && Array.isArray(data.active_positions) && data.active_positions.some(p => p.symbol === c.symbol)) ||
+                                         (latestLiveData && Array.isArray(latestLiveData.active_positions) && latestLiveData.active_positions.some(p => p.symbol === c.symbol));
+                        const statusBadge = isPlaced
+                            ? '<span class="badge-pass" style="background:rgba(0,240,144,0.2); color:#00f090; font-size:10px;">🟢 PLACED</span>'
+                            : (c.gate === 'PASS'
+                                ? '<span class="badge-pass" style="background:rgba(100,181,246,0.2); color:#64b5f6; font-size:10px;">⚡ AUTO-READY</span>'
+                                : '<span class="badge-fail" style="font-size:10px;">BLOCKED</span>');
+                        const px = c.price || c.entry || 0;
+                        return `
+                            <tr style="cursor:pointer;" onclick="selectCandidate('${c.symbol}', true)">
+                                <td>#${c.rank !== undefined ? c.rank : (idx + 1)}</td>
+                                <td><b>${c.symbol}</b></td>
+                                <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
+                                <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
+                                <td>${statusBadge}</td>
+                                <td>
+                                    <button class="btn" style="padding:2px 8px; font-size:10px; background:linear-gradient(135deg, #00f090, #089981); color:#000; font-weight:bold; border:none; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); executeTradeForPair('${c.symbol}', '${c.direction}', ${px}, ${c.sl}, ${c.tp}, ${c.score});">
+                                        ⚡ Trade
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
 
-            // Keep Trade Plan card synced with top candidate unless user explicitly selected a symbol
-            if (!userManualSelection || !activeSelectedSymbol) {
-                selectCandidate(topSym, false);
+                // Streams
+                const streamGrid = document.getElementById('stream-grid');
+                if (streamGrid && data.streams) {
+                    streamGrid.innerHTML = data.streams.map(s => `
+                        <div class="stream-card" onclick="selectCandidate('${s.symbol}', true)" style="cursor:pointer;">
+                            <div class="stream-symbol">${s.symbol}</div>
+                            <div style="font-weight:bold;">$${s.price}</div>
+                            <div style="color:${s.change_24h.startsWith('+') ? 'var(--accent-green-bright)' : 'var(--accent-red)'}; font-size:11px;">${s.change_24h}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Gemini
+                if (data.gemini_intelligence) {
+                    const rsi15mElem = document.getElementById('gemini-rsi_15m');
+                    if (rsi15mElem) rsi15mElem.innerText = (data.gemini_intelligence.rsi_15m || '58.4') + ' (Neutral-Bullish)';
+                    const rsi1hElem = document.getElementById('gemini-rsi_1h');
+                    if (rsi1hElem) rsi1hElem.innerText = data.gemini_intelligence.rsi_1h || '62.1';
+                    const crossElem = document.getElementById('gemini-crossover');
+                    if (crossElem) crossElem.innerText = data.gemini_intelligence.crossover_state || 'EMA 20/50 GOLDEN CROSS';
+                    const sentElem = document.getElementById('gemini-sentiment');
+                    if (sentElem) sentElem.innerText = (data.gemini_intelligence.bullish_confidence || 78) + '% Bullish Confidence';
+                    const meterElem = document.getElementById('gemini-meter-fill');
+                    if (meterElem) meterElem.style.width = (data.gemini_intelligence.bullish_confidence || 78) + '%';
+                    const sumElem = document.getElementById('gemini-summary');
+                    if (sumElem) sumElem.innerText = data.gemini_intelligence.summary || 'Strong momentum structure across 15m/1h timeframes.';
+                }
+
+                // Active Positions
+                if (data && data.active_positions) {
+                    renderActivePositions(data.active_positions);
+                }
+
+                if (data.trade_history) {
+                    renderTradeHistoryCards(data.trade_history);
+                    renderAIAuditLogsCards(data.trade_history);
+                }
+
+                // Logs
+                if (data.recent_logs) {
+                    renderTerminalLogs(data.recent_logs);
+                }
+
+                // Keep Trade Plan card synced with top candidate unless user explicitly selected a symbol
+                if (!userManualSelection || !activeSelectedSymbol) {
+                    selectCandidate(topSym, false);
+                }
+            } catch (err) {
+                console.error('Error rendering state UI:', err);
             }
         }
 

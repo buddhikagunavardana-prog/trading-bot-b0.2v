@@ -54,13 +54,47 @@ async def get_bot_state():
     try:
         if "market_mode" not in bot_state:
             bot_state["market_mode"] = "CRYPTO"
-        summary = paper_trade_manager.get_summary(market_mode=bot_state["market_mode"])
-        bot_state["active_positions"] = summary["active_positions"]
-        bot_state["trade_history"] = summary["trade_history"]
+        try:
+            summary = paper_trade_manager.get_summary(market_mode=bot_state["market_mode"])
+            bot_state["active_positions"] = summary.get("active_positions", [])
+            bot_state["trade_history"] = summary.get("trade_history", [])
+            if "wallet" not in bot_state or not bot_state["wallet"]:
+                bot_state["wallet"] = {
+                    "total_equity": summary.get("total_equity", 10000.0),
+                    "available_margin": summary.get("available_margin", 10000.0),
+                    "unrealized_pnl": summary.get("unrealized_pnl", 0.0),
+                    "realized_pnl": summary.get("realized_pnl", 0.0),
+                    "win_rate": summary.get("win_rate", 0.0),
+                    "total_trades": summary.get("total_trades", 0),
+                }
+        except Exception as pe:
+            logger.error(f"Error updating paper trade summary for bot_state: {pe}")
         return JSONResponse(status_code=200, content=bot_state)
     except Exception as e:
         logger.error(f"Error serving bot state: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+        fallback = {
+            "status": "error",
+            "detail": str(e),
+            "data": {},
+            "markets": {},
+            "state": bot_state if isinstance(bot_state, dict) else {},
+            "settings": bot_state.get("settings", {}) if isinstance(bot_state, dict) else {},
+            "runtime_identity": bot_state.get("runtime_identity", {}) if isinstance(bot_state, dict) else {},
+            "providers": bot_state.get("providers", []) if isinstance(bot_state, dict) else [],
+            "wallet": bot_state.get("wallet", {
+                "total_equity": 10000.0,
+                "available_margin": 10000.0,
+                "unrealized_pnl": 0.0,
+                "realized_pnl": 0.0,
+                "win_rate": 0.0,
+                "total_trades": 0
+            }) if isinstance(bot_state, dict) else {},
+            "active_positions": [],
+            "trade_history": [],
+            "candidates": bot_state.get("candidates", []) if isinstance(bot_state, dict) else [],
+            "scoreboard": bot_state.get("scoreboard", {}) if isinstance(bot_state, dict) else {}
+        }
+        return JSONResponse(status_code=200, content=fallback)
 
 
 @router.get("/api/live-data")
@@ -68,13 +102,43 @@ async def get_live_data():
     try:
         if "market_mode" not in live_data:
             live_data["market_mode"] = bot_state.get("market_mode", "CRYPTO")
-        summary = paper_trade_manager.get_summary(market_mode=live_data["market_mode"])
-        live_data["active_positions"] = summary["active_positions"]
-        live_data["trade_history"] = summary["trade_history"]
+        try:
+            summary = paper_trade_manager.get_summary(market_mode=live_data["market_mode"])
+            live_data["active_positions"] = summary.get("active_positions", [])
+            live_data["trade_history"] = summary.get("trade_history", [])
+            if "wallet" not in live_data or not live_data["wallet"]:
+                live_data["wallet"] = {
+                    "total_equity": summary.get("total_equity", 10000.0),
+                    "available_margin": summary.get("available_margin", 10000.0),
+                    "unrealized_pnl": summary.get("unrealized_pnl", 0.0),
+                    "realized_pnl": summary.get("realized_pnl", 0.0),
+                    "win_rate": summary.get("win_rate", 0.0),
+                    "total_trades": summary.get("total_trades", 0),
+                }
+        except Exception as pe:
+            logger.error(f"Error updating paper trade summary for live_data: {pe}")
         return JSONResponse(status_code=200, content=live_data)
     except Exception as e:
         logger.error(f"Error serving live data: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+        fallback = {
+            "status": "error",
+            "detail": str(e),
+            "data": live_data if isinstance(live_data, dict) else {},
+            "markets": {},
+            "state": live_data if isinstance(live_data, dict) else {},
+            "active_positions": [],
+            "trade_history": [],
+            "stream_logs": live_data.get("stream_logs", []) if isinstance(live_data, dict) else [],
+            "wallet": live_data.get("wallet", {
+                "total_equity": 10000.0,
+                "available_margin": 10000.0,
+                "unrealized_pnl": 0.0,
+                "realized_pnl": 0.0,
+                "win_rate": 0.0,
+                "total_trades": 0
+            }) if isinstance(live_data, dict) else {}
+        }
+        return JSONResponse(status_code=200, content=fallback)
 
 
 @router.post("/api/market-mode")
