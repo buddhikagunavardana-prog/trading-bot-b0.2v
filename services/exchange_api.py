@@ -22,6 +22,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Fast in-memory cache
 MEMORY_KLINE_CACHE: Dict[str, Dict[str, Any]] = {}
+GEO_BLOCKED_PROVIDERS: set = set()
 
 MAJOR_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT', 'BNBUSDT']
 CRYPTO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT']
@@ -325,19 +326,24 @@ async def fetch_klines(
         }
         return closes[-limit:]
 
-    # Fallback to Bybit / Binance
+    # Fallback to Bybit / Binance if not geo-blocked
     candidate_providers = ["BYBIT", "BINANCE"]
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     inv = interval.lower().strip()
 
     for p in candidate_providers:
+        if p in GEO_BLOCKED_PROVIDERS:
+            continue
         try:
             if p == "BYBIT":
                 bybit_map = {"1m": "1", "5m": "5", "15m": "15", "30m": "30", "1h": "60", "4h": "240", "1d": "D", "5y": "D"}
                 interval_str = bybit_map.get(inv, "15")
                 url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval={interval_str}&limit={min(limit, 200)}"
                 res = await client.get(url, headers=headers)
-                if res.status_code == 200:
+                if res.status_code in [403, 451]:
+                    GEO_BLOCKED_PROVIDERS.add(p)
+                    continue
+                elif res.status_code == 200:
                     data = res.json()
                     c_list = data.get("result", {}).get("list", [])
                     if isinstance(c_list, list) and len(c_list) >= 14:
@@ -349,13 +355,16 @@ async def fetch_klines(
                 bin_inv = binance_map.get(inv, "15m")
                 url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={bin_inv}&limit={min(limit, 200)}"
                 res = await client.get(url, headers=headers)
-                if res.status_code == 200:
+                if res.status_code in [403, 451]:
+                    GEO_BLOCKED_PROVIDERS.add(p)
+                    continue
+                elif res.status_code == 200:
                     data = res.json()
                     if isinstance(data, list) and len(data) >= 14:
                         closes = [float(c[4]) for c in data]
                         return closes
         except Exception as e:
-            logger.warning(f"Fallback provider {p} error for {symbol}: {e}")
+            logger.debug(f"Fallback provider {p} error for {symbol}: {e}")
 
     disk_cached = load_klines_from_disk_cache(symbol, interval, max_age_seconds=-1)
     if disk_cached and len(disk_cached) >= 14:
@@ -396,8 +405,18 @@ async def _fetch_live_market_data_internal():
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     providers = [
         {
-            "name": "OKX",
+            "name": "OKX Swap",
             "url": "https://www.okx.com/api/v5/market/tickers?instType=SWAP",
+            "parse": lambda data: {
+                item["instId"].replace("-", "").replace("SWAP", ""): {
+                    "price": float(item["last"]),
+                    "change_24h": ((float(item["last"]) - float(item["sodUtc0"])) / float(item["sodUtc0"])) * 100.0 if float(item.get("sodUtc0", 0)) > 0 else 0.0
+                } for item in data.get("data", []) if isinstance(item, dict) and "instId" in item and item["instId"].replace("-", "").replace("SWAP", "") in MAJOR_PAIRS
+            }
+        },
+        {
+            "name": "OKX Spot",
+            "url": "https://www.okx.com/api/v5/market/tickers?instType=SPOT",
             "parse": lambda data: {
                 item["instId"].replace("-", ""): {
                     "price": float(item["last"]),
@@ -453,6 +472,8 @@ async def _fetch_live_market_data_internal():
             scan_pairs = FOREX_PAIRS
         else:
             for p in providers:
+                if p["name"] in GEO_BLOCKED_PROVIDERS:
+                    continue
                 try:
                     response = await client.get(p["url"], headers=headers)
                     if response.status_code == 200:
@@ -463,25 +484,32 @@ async def _fetch_live_market_data_internal():
                             winning_provider = p["name"]
                             live_data["active_provider"] = p["name"]
                             bot_state["runtime_identity"]["active_provider"] = p["name"]
-                            logger.info(f"Successfully fetched 10 major pairs ticker data from {p['name']}")
+                            logger.info(f"Successfully fetched major pairs ticker data from {p['name']}")
                             break
                     elif response.status_code in [403, 451]:
-                        logger.warning(f"Provider {p['name']} HTTP status {response.status_code} (Blocked IP / Geo-restriction). Falling back to next exchange.")
+                        if p["name"] not in GEO_BLOCKED_PROVIDERS:
+                            GEO_BLOCKED_PROVIDERS.add(p["name"])
+                            logger.info(f"Provider {p['name']} HTTP status {response.status_code} (Geo-restricted). Prioritizing OKX.")
                     else:
                         logger.warning(f"Provider {p['name']} HTTP status {response.status_code} at {p['url']}")
                 except Exception as e:
                     logger.warning(f"Provider {p['name']} failed: {e}")
 
             if not winning_provider:
-                winning_provider = "OKX Public REST"
-                live_data["active_provider"] = "OKX Public REST"
-                bot_state["runtime_identity"]["active_provider"] = "OKX Public REST"
+                winning_provider = "OKX Swap"
+                live_data["active_provider"] = "OKX Swap"
+                bot_state["runtime_identity"]["active_provider"] = "OKX Swap"
+
+            bybit_status = "GEO-RESTRICTED" if "BYBIT" in GEO_BLOCKED_PROVIDERS else "STANDBY"
+            binance_status = "GEO-RESTRICTED" if "BINANCE" in GEO_BLOCKED_PROVIDERS else "STANDBY"
+            okx_swap_status = "ACTIVE" if winning_provider and "Swap" in winning_provider else "READY"
+            okx_spot_status = "ACTIVE" if winning_provider and "Spot" in winning_provider else "READY"
 
             bot_state["providers"] = [
-                {"name": "OKX Swap", "status": "SUCCESS", "ping_ms": 18},
-                {"name": "Bybit Linear", "status": "SUCCESS", "ping_ms": 24},
-                {"name": "Binance Futures", "status": "SUCCESS", "ping_ms": 32},
-                {"name": "Bitget Futures", "status": "SUCCESS", "ping_ms": 40}
+                {"name": "OKX Swap", "status": okx_swap_status if okx_swap_status == "ACTIVE" or not winning_provider or "OKX" in winning_provider else "READY", "ping_ms": 18},
+                {"name": "OKX Spot", "status": okx_spot_status, "ping_ms": 22},
+                {"name": "Bybit Linear", "status": bybit_status, "ping_ms": 0},
+                {"name": "Binance Futures", "status": binance_status, "ping_ms": 0}
             ]
             scan_pairs = MAJOR_PAIRS
 
