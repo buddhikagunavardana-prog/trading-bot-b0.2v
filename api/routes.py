@@ -308,18 +308,101 @@ async def delete_strategy_endpoint(strategy_id: str):
 @router.post("/api/run-backtest")
 async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
     try:
+        if not isinstance(payload, dict):
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Payload must be a valid JSON object"}
+            )
+
         test_mode = payload.get("test_mode", "BACKTEST")
-        duration_days = int(payload.get("duration_days", 30))
         start_date = payload.get("start_date")
         end_date = payload.get("end_date")
-        strategy_id = payload.get("strategy_id", "alpha_engine")
+
+        # Resolve strategy_id with fallback to engine_version / version aliases
+        strategy_id = (
+            payload.get("strategy_id")
+            or payload.get("engine_version")
+            or payload.get("version")
+            or payload.get("strategy_version")
+            or "alpha_engine"
+        )
 
         master_settings = paper_trade_manager.get_master_settings()
-        initial_capital = float(payload.get("initial_capital", 10000.0))
-        position_size = float(payload.get("position_size", master_settings.get("position_size", 300.0)))
-        leverage = int(payload.get("leverage", master_settings.get("leverage", 10)))
-        score_threshold = float(payload.get("score_threshold", master_settings.get("score_threshold", 70.0)))
+
+        # Parse & validate duration_days
+        try:
+            duration_days = int(payload.get("duration_days", 30))
+            if duration_days <= 0:
+                return JSONResponse(status_code=400, content={"status": "error", "message": "duration_days must be a positive integer"})
+        except (ValueError, TypeError):
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid duration_days value provided"})
+
+        # Parse & validate initial_capital
+        try:
+            initial_capital = float(payload.get("initial_capital", 10000.0))
+            if initial_capital <= 0:
+                return JSONResponse(status_code=400, content={"status": "error", "message": "initial_capital must be greater than 0"})
+        except (ValueError, TypeError):
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid initial_capital value provided"})
+
+        # Parse & validate position_size
+        try:
+            position_size = float(payload.get("position_size", master_settings.get("position_size", 300.0)))
+            if position_size <= 0:
+                return JSONResponse(status_code=400, content={"status": "error", "message": "position_size must be greater than 0"})
+        except (ValueError, TypeError):
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid position_size value provided"})
+
+        # Parse & validate leverage
+        try:
+            leverage = int(payload.get("leverage", master_settings.get("leverage", 10)))
+            if leverage <= 0:
+                return JSONResponse(status_code=400, content={"status": "error", "message": "leverage must be a positive integer"})
+        except (ValueError, TypeError):
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid leverage value provided"})
+
+        # Parse & validate score_threshold / threshold
+        thresh_raw = payload.get("score_threshold") if payload.get("score_threshold") is not None else payload.get("threshold")
+        if thresh_raw is not None:
+            try:
+                score_threshold = float(thresh_raw)
+            except (ValueError, TypeError):
+                return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid score_threshold/threshold parameter"})
+        else:
+            score_threshold = float(master_settings.get("score_threshold", 70.0))
+
+        # Parse & validate timeframe
         timeframe = str(payload.get("timeframe", master_settings.get("timeframe", "15m")))
+
+        # Parse & validate SL / TP parameters
+        sl_raw = payload.get("stop_loss_pct") if payload.get("stop_loss_pct") is not None else (
+            payload.get("sl_pct") if payload.get("sl_pct") is not None else (
+                payload.get("stop_loss") if payload.get("stop_loss") is not None else payload.get("sl")
+            )
+        )
+        if sl_raw is not None:
+            try:
+                stop_loss_pct = float(sl_raw)
+            except (ValueError, TypeError):
+                return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid stop_loss_pct parameter"})
+        else:
+            stop_loss_pct = None
+
+        tp_raw = payload.get("take_profit_pct") if payload.get("take_profit_pct") is not None else (
+            payload.get("tp_pct") if payload.get("tp_pct") is not None else (
+                payload.get("take_profit") if payload.get("take_profit") is not None else payload.get("tp")
+            )
+        )
+        if tp_raw is not None:
+            try:
+                take_profit_pct = float(tp_raw)
+            except (ValueError, TypeError):
+                return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid take_profit_pct parameter"})
+        else:
+            take_profit_pct = None
+
+        use_custom_params = bool(payload.get("use_custom_params", True))
+        symbols = payload.get("symbols")
 
         # Prefetch and cache real OKX candles for requested timeframe
         try:
@@ -329,15 +412,6 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
                 await fetch_okx_candles_extended(s, interval=timeframe, limit=500)
         except Exception as pf_err:
             logger.warning(f"Simulation candle prefetch warning: {pf_err}")
-
-        stop_loss_pct_val = payload.get("stop_loss_pct") if payload.get("stop_loss_pct") is not None else payload.get("sl_pct")
-        stop_loss_pct = float(stop_loss_pct_val) if stop_loss_pct_val is not None else None
-
-        take_profit_pct_val = payload.get("take_profit_pct") if payload.get("take_profit_pct") is not None else payload.get("tp_pct")
-        take_profit_pct = float(take_profit_pct_val) if take_profit_pct_val is not None else None
-
-        use_custom_params = bool(payload.get("use_custom_params", True))
-        symbols = payload.get("symbols")
 
         report = backtest_engine.run_simulation(
             test_mode=test_mode,

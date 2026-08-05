@@ -3489,6 +3489,25 @@
             container.appendChild(simCard);
         }
 
+        async function runSimulationEngine() {
+            const simModeElem = document.getElementById('simMode');
+            const simDurElem = document.getElementById('simDuration');
+            const simMode = simModeElem ? simModeElem.value : 'BACKTEST';
+            const simDur = simDurElem ? simDurElem.value : '30days';
+
+            let durationDays = 30;
+            if (simDur === '3months' || simDur === '90') durationDays = 90;
+            else if (simDur === '1year' || simDur === '365') durationDays = 365;
+
+            const testModeInput = document.getElementById('sim-test-mode');
+            if (testModeInput) testModeInput.value = (simMode === 'forward' || simMode === 'FORWARD_TEST') ? 'FORWARD_TEST' : 'BACKTEST';
+
+            const durPresetInput = document.getElementById('sim-duration-preset');
+            if (durPresetInput) durPresetInput.value = durationDays.toString();
+
+            await runBacktestSimulation();
+        }
+
 <!-- Fullscreen Simulation Viewer Modal -->
 <div id="fullscreen-simulation-modal" class="fullscreen-modal-overlay">
     <!-- Header -->
@@ -3807,13 +3826,24 @@
                 btn.innerText = '⏳ SIMULATING...';
             }
 
+            const threshInput = document.getElementById('sim-threshold-input');
+            const slInput = document.getElementById('sim-sl-input');
+            const tpInput = document.getElementById('sim-tp-input');
+            const sizeInput = document.getElementById('sim-size-input');
+            const customToggle = document.getElementById('sim-use-custom-toggle');
+
             const payload = {
                 test_mode: document.getElementById('fs-sim-mode').value,
                 timeframe: document.getElementById('fs-sim-timeframe').value,
                 duration_days: parseInt(document.getElementById('fs-sim-duration').value || '30'),
                 initial_capital: parseFloat(document.getElementById('fs-sim-capital').value || '10000'),
                 leverage: parseInt(document.getElementById('fs-sim-leverage').value || '10'),
-                strategy_id: document.getElementById('fs-sim-strategy').value
+                strategy_id: document.getElementById('fs-sim-strategy').value,
+                score_threshold: threshInput ? (parseFloat(threshInput.value) || 70.0) : 70.0,
+                stop_loss_pct: slInput ? (parseFloat(slInput.value) || 2.0) : 2.0,
+                take_profit_pct: tpInput ? (parseFloat(tpInput.value) || 4.0) : 4.0,
+                position_size: sizeInput ? (parseFloat(sizeInput.value) || 300.0) : 300.0,
+                use_custom_params: customToggle ? customToggle.checked : true
             };
 
             appendFsTerminalLog(`[${new Date().toLocaleTimeString()}] 🚀 Launching ${payload.test_mode} simulation on ${payload.timeframe} timeframe...`);

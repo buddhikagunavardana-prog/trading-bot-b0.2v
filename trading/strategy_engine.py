@@ -207,6 +207,7 @@ class StrategyVersionManager:
             return True
         return False
 
+    @staticmethod
     def list_all_strategies() -> List[Dict[str, Any]]:
         """Returns metadata for all registered strategies (base + custom versions)."""
         result = []
