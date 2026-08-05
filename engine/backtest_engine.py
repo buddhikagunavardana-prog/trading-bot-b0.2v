@@ -493,8 +493,10 @@ class BacktestEngine:
             strategy_id = "alpha_engine"
         strategy = STRATEGY_REGISTRY[strategy_id]
 
-        if not symbols:
+        if not symbols or len(symbols) == 0:
             symbols = list(self.BASE_PRICES.keys())
+        if not symbols or len(symbols) == 0:
+            symbols = ["BTC/USDT"]
 
         # Determine timeframe and start/end dates
         now = datetime.utcnow()
@@ -550,6 +552,16 @@ class BacktestEngine:
                 timeframe=tf_clean
             )
 
+        # Ensure every symbol has candles
+        first_sym = symbols[0]
+        if not candles_by_symbol.get(first_sym):
+            candles_by_symbol[first_sym] = self._generate_synthetic_candles(
+                symbol=first_sym,
+                num_bars=total_bars + 50,
+                start_time=start_dt - timedelta(hours=50 * bar_duration_hours),
+                bar_duration_hours=bar_duration_hours
+            )
+
         # State tracking
         current_equity = initial_capital
         peak_equity = initial_capital
@@ -563,12 +575,16 @@ class BacktestEngine:
 
         # Warmup index offset
         warmup = 50
+        max_available_bars = len(candles_by_symbol[first_sym])
+        effective_bars = min(total_bars, max(0, max_available_bars - warmup))
 
         # Sample equity curve points
-        sample_step = max(1, total_bars // 60)
+        sample_step = max(1, effective_bars // 60)
 
-        for bar_idx in range(warmup, warmup + total_bars):
-            curr_bar_time = candles_by_symbol[symbols[0]][bar_idx]["timestamp"]
+        for bar_idx in range(warmup, warmup + effective_bars):
+            if bar_idx >= len(candles_by_symbol[first_sym]):
+                break
+            curr_bar_time = candles_by_symbol[first_sym][bar_idx]["timestamp"]
 
             # 1. Evaluate open positions for exit (SL/TP triggers)
             for sym in list(open_positions.keys()):
@@ -716,7 +732,10 @@ class BacktestEngine:
                 })
 
         # Close any remaining open positions at final candle close
-        final_bar_time = candles_by_symbol[symbols[0]][-1]["timestamp"]
+        if candles_by_symbol.get(first_sym) and len(candles_by_symbol[first_sym]) > 0:
+            final_bar_time = candles_by_symbol[first_sym][-1]["timestamp"]
+        else:
+            final_bar_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
         for sym, pos in list(open_positions.items()):
             exit_price = candles_by_symbol[sym][-1]["close"]
             qty = pos["quantity"]

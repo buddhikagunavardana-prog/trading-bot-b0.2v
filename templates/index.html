@@ -1101,7 +1101,7 @@
                     💡 <b style="color:#ffffff;">Strategy Runner Info:</b> Modular strategy framework supporting multi-pair candle simulation, dynamic SL/TP order matching, and fee deduction.
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <button class="btn" onclick="runBacktestSimulation(event);" ondblclick="event.stopPropagation();" id="btn-run-simulation" style="padding:10px 24px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #64b5f6, #1e88e5); border:1px solid rgba(255,255,255,0.2); color:#ffffff; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(100, 181, 246, 0.3); transition:all 0.2s ease;">
+                    <button type="button" class="btn" onclick="runBacktestSimulation(event);" ondblclick="event.stopPropagation();" id="btn-run-simulation" style="padding:10px 24px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #64b5f6, #1e88e5); border:1px solid rgba(255,255,255,0.2); color:#ffffff; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(100, 181, 246, 0.3); transition:all 0.2s ease;">
                         🚀 Run Strategy Simulation
                     </button>
                 </div>
@@ -3493,12 +3493,14 @@
         }
 
         async function runBacktestSimulation(e) {
-            if (e && e.stopPropagation) {
-                e.stopPropagation();
+            if (e) {
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.preventDefault === 'function') e.preventDefault();
             }
 
             const btn = document.getElementById('btn-run-simulation');
             if (btn) {
+                if (btn.disabled) return; // Prevent double execution
                 btn.disabled = true;
                 btn.innerText = '⏳ Simulating Market Data...';
             }
@@ -3517,33 +3519,35 @@
             const strategyId = strategySelect ? strategySelect.value : 'alpha_engine';
 
             const capElem = document.getElementById('sim-capital-input');
-            const capital = capElem ? (parseFloat(capElem.value) || 10000.0) : 10000.0;
+            const capital = (capElem && !isNaN(parseFloat(capElem.value))) ? parseFloat(capElem.value) : 10000.0;
 
             const sizeElem = document.getElementById('sim-size-input');
-            const size = sizeElem ? (parseFloat(sizeElem.value) || 300.0) : 300.0;
+            const size = (sizeElem && !isNaN(parseFloat(sizeElem.value))) ? parseFloat(sizeElem.value) : 300.0;
 
             const levElem = document.getElementById('sim-leverage-input');
-            const leverage = levElem ? (parseInt(levElem.value) || 10) : 10;
+            const leverage = (levElem && !isNaN(parseInt(levElem.value))) ? parseInt(levElem.value) : 10;
             
             const useCustomElem = document.getElementById('sim-use-custom-toggle');
             const useCustom = useCustomElem ? useCustomElem.checked : true;
 
             const threshElem = document.getElementById('sim-threshold-input');
-            const threshVal = threshElem ? (parseFloat(threshElem.value) || 70.0) : (currentBotState ? (currentBotState.score_threshold || currentBotState.threshold || 70.0) : 70.0);
+            const threshVal = (threshElem && !isNaN(parseFloat(threshElem.value))) ? parseFloat(threshElem.value) : (currentBotState ? (currentBotState.score_threshold || currentBotState.threshold || 70.0) : 70.0);
 
             const slElem = document.getElementById('sim-sl-input');
-            const slVal = slElem ? (parseFloat(slElem.value) || 2.0) : 2.0;
+            const slVal = (slElem && !isNaN(parseFloat(slElem.value))) ? parseFloat(slElem.value) : 2.0;
 
             const tpElem = document.getElementById('sim-tp-input');
-            const tpVal = tpElem ? (parseFloat(tpElem.value) || 4.0) : 4.0;
+            const tpVal = (tpElem && !isNaN(parseFloat(tpElem.value))) ? parseFloat(tpElem.value) : 4.0;
 
             let durationDays = 30;
             let startDate = null;
             let endDate = null;
 
             if (presetVal === 'CUSTOM') {
-                startDate = document.getElementById('sim-start-date').value;
-                endDate = document.getElementById('sim-end-date').value;
+                const startElem = document.getElementById('sim-start-date');
+                const endElem = document.getElementById('sim-end-date');
+                startDate = startElem ? startElem.value : null;
+                endDate = endElem ? endElem.value : null;
             } else {
                 durationDays = parseInt(presetVal) || 30;
             }
@@ -3582,7 +3586,7 @@
                 if (data.status === 'success' && data.report) {
                     renderBacktestReport(data.report);
                 } else {
-                    alert('Simulation failed: ' + (data.detail || 'Unknown error'));
+                    alert('Simulation failed: ' + (data.detail || data.message || 'Unknown error'));
                 }
             } catch(e) {
                 console.error('Error running simulation:', e);

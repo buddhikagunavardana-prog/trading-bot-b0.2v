@@ -398,48 +398,52 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
 
         # Parse & validate duration_days
         try:
-            duration_days = int(payload.get("duration_days", 30))
+            raw_dur = payload.get("duration_days")
+            duration_days = int(raw_dur) if raw_dur is not None and str(raw_dur).strip() != "" else 30
             if duration_days <= 0:
-                return JSONResponse(status_code=400, content={"status": "error", "message": "duration_days must be a positive integer"})
+                duration_days = 30
         except (ValueError, TypeError):
-            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid duration_days value provided"})
+            duration_days = 30
 
         # Parse & validate initial_capital
         try:
-            initial_capital = float(payload.get("initial_capital", 10000.0))
+            raw_cap = payload.get("initial_capital")
+            initial_capital = float(raw_cap) if raw_cap is not None and str(raw_cap).strip() != "" else 10000.0
             if initial_capital <= 0:
-                return JSONResponse(status_code=400, content={"status": "error", "message": "initial_capital must be greater than 0"})
+                initial_capital = 10000.0
         except (ValueError, TypeError):
-            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid initial_capital value provided"})
+            initial_capital = 10000.0
 
         # Parse & validate position_size
         try:
-            position_size = float(payload.get("position_size", master_settings.get("position_size", 300.0)))
+            raw_sz = payload.get("position_size")
+            position_size = float(raw_sz) if raw_sz is not None and str(raw_sz).strip() != "" else float(master_settings.get("position_size", 300.0))
             if position_size <= 0:
-                return JSONResponse(status_code=400, content={"status": "error", "message": "position_size must be greater than 0"})
+                position_size = 300.0
         except (ValueError, TypeError):
-            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid position_size value provided"})
+            position_size = 300.0
 
         # Parse & validate leverage
         try:
-            leverage = int(payload.get("leverage", master_settings.get("leverage", 10)))
+            raw_lev = payload.get("leverage")
+            leverage = int(raw_lev) if raw_lev is not None and str(raw_lev).strip() != "" else int(master_settings.get("leverage", 10))
             if leverage <= 0:
-                return JSONResponse(status_code=400, content={"status": "error", "message": "leverage must be a positive integer"})
+                leverage = 10
         except (ValueError, TypeError):
-            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid leverage value provided"})
+            leverage = 10
 
         # Parse & validate score_threshold / threshold
         thresh_raw = payload.get("score_threshold") if payload.get("score_threshold") is not None else payload.get("threshold")
-        if thresh_raw is not None:
+        if thresh_raw is not None and str(thresh_raw).strip() != "":
             try:
                 score_threshold = float(thresh_raw)
             except (ValueError, TypeError):
-                return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid score_threshold/threshold parameter"})
+                score_threshold = float(master_settings.get("score_threshold", 70.0))
         else:
             score_threshold = float(master_settings.get("score_threshold", 70.0))
 
         # Parse & validate timeframe
-        timeframe = str(payload.get("timeframe", master_settings.get("timeframe", "15m")))
+        timeframe = str(payload.get("timeframe") or master_settings.get("timeframe", "15m"))
 
         # Parse & validate SL / TP parameters
         sl_raw = payload.get("stop_loss_pct") if payload.get("stop_loss_pct") is not None else (
@@ -447,26 +451,26 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
                 payload.get("stop_loss") if payload.get("stop_loss") is not None else payload.get("sl")
             )
         )
-        if sl_raw is not None:
+        if sl_raw is not None and str(sl_raw).strip() != "":
             try:
                 stop_loss_pct = float(sl_raw)
             except (ValueError, TypeError):
-                return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid stop_loss_pct parameter"})
+                stop_loss_pct = 2.0
         else:
-            stop_loss_pct = None
+            stop_loss_pct = 2.0
 
         tp_raw = payload.get("take_profit_pct") if payload.get("take_profit_pct") is not None else (
             payload.get("tp_pct") if payload.get("tp_pct") is not None else (
                 payload.get("take_profit") if payload.get("take_profit") is not None else payload.get("tp")
             )
         )
-        if tp_raw is not None:
+        if tp_raw is not None and str(tp_raw).strip() != "":
             try:
                 take_profit_pct = float(tp_raw)
             except (ValueError, TypeError):
-                return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid take_profit_pct parameter"})
+                take_profit_pct = 4.0
         else:
-            take_profit_pct = None
+            take_profit_pct = 4.0
 
         use_custom_params = bool(payload.get("use_custom_params", True))
         symbols = payload.get("symbols")
