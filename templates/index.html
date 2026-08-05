@@ -2765,11 +2765,14 @@
             try {
                 const res = await fetch('/api/market-mode', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ market_mode: targetMode })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mode: targetMode, market_mode: targetMode })
                 });
                 const data = await res.json();
-                if (data.status === 'success') {
+                if (data && data.status === 'success') {
                     if (data.live_data) latestLiveData = data.live_data;
                     if (data.bot_state) currentBotState = data.bot_state;
                 }

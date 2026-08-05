@@ -164,6 +164,21 @@ async def get_live_data():
         return JSONResponse(status_code=200, content=to_json_safe(fallback))
 
 
+@router.get("/api/market-mode")
+@router.get("/api/settings/market-mode")
+async def get_market_mode():
+    try:
+        active_mode = bot_state.get("market_mode", "CRYPTO") if isinstance(bot_state, dict) else "CRYPTO"
+        return JSONResponse(status_code=200, content=to_json_safe({
+            "status": "success",
+            "mode": active_mode,
+            "market_mode": active_mode
+        }))
+    except Exception as e:
+        logger.error(f"Error fetching market mode: {e}", exc_info=True)
+        return JSONResponse(status_code=200, content={"status": "success", "mode": "CRYPTO", "market_mode": "CRYPTO"})
+
+
 @router.post("/api/market-mode")
 @router.post("/api/settings/market-mode")
 async def set_market_mode(request: Request = None, payload: Dict[str, Any] = Body(default={})):
@@ -173,7 +188,11 @@ async def set_market_mode(request: Request = None, payload: Dict[str, Any] = Bod
             try:
                 body_data = await request.json()
             except Exception:
-                body_data = {}
+                try:
+                    form_data = await request.form()
+                    body_data = dict(form_data)
+                except Exception:
+                    body_data = {}
 
         raw_mode = None
         if isinstance(body_data, dict):
