@@ -470,10 +470,17 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
 
         use_custom_params = bool(payload.get("use_custom_params", True))
         symbols = payload.get("symbols")
-        current_market = bot_state.get("market_mode", "CRYPTO")
+        market_mode_req = payload.get("market_mode") or payload.get("mode")
+        if market_mode_req:
+            current_market = str(market_mode_req).upper().strip()
+            bot_state["market_mode"] = current_market
+            live_data["market_mode"] = current_market
+        else:
+            current_market = bot_state.get("market_mode", "CRYPTO")
+
         if not symbols:
             if current_market == "FOREX":
-                symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF']
+                symbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X', 'USDCHF=X']
             else:
                 symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT']
 

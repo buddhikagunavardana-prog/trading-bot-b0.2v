@@ -350,6 +350,13 @@ class BacktestEngine:
         "USD/CAD": 1.3780,
         "NZD/USD": 0.5980,
         "USD/CHF": 0.8840,
+        "EURUSD=X": 1.0885,
+        "GBPUSD=X": 1.2940,
+        "USDJPY=X": 154.50,
+        "AUDUSD=X": 0.6580,
+        "USDCAD=X": 1.3780,
+        "NZDUSD=X": 0.5980,
+        "USDCHF=X": 0.8840,
     }
 
     def _generate_synthetic_candles(self, symbol: str, num_bars: int, start_time: datetime, bar_duration_hours: int = 1) -> List[Dict[str, Any]]:

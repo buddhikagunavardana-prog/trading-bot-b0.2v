@@ -2028,18 +2028,21 @@
 
             // Alpha Scanner Results
             if (liveData.alpha_scanner_results && liveData.alpha_scanner_results.length > 0) {
-                const results = liveData.alpha_scanner_results;
-                
-                // Strictly sort results descending by Alpha Score (symbol tiebreaker)
-                results.sort((a, b) => {
-                    if (b.score !== a.score) return b.score - a.score;
-                    return a.symbol.localeCompare(b.symbol);
-                });
-                results.forEach((item, idx) => {
-                    item.rank = idx + 1;
+                let results = liveData.alpha_scanner_results.filter(item => {
+                    return activeMarketMode === 'FOREX' ? isForexSymbol(item.symbol) : !isForexSymbol(item.symbol);
                 });
 
-                const topPair = results[0];
+                if (results.length > 0) {
+                    // Strictly sort results descending by Alpha Score (symbol tiebreaker)
+                    results.sort((a, b) => {
+                        if (b.score !== a.score) return b.score - a.score;
+                        return a.symbol.localeCompare(b.symbol);
+                    });
+                    results.forEach((item, idx) => {
+                        item.rank = idx + 1;
+                    });
+
+                    const topPair = results[0];
 
                 const topNameElem = document.getElementById('top-candidate-name');
                 const topScoreElem = document.getElementById('top-candidate-score');
@@ -2094,6 +2097,7 @@
                     selectCandidate(topPair.symbol, false);
                 } else {
                     selectCandidate(activeSelectedSymbol, false);
+                }
                 }
             }
         }
@@ -2653,6 +2657,12 @@
 
         let activeMarketMode = 'CRYPTO';
 
+        function isForexSymbol(s) {
+            if (!s) return false;
+            const sym = String(s).toUpperCase();
+            return sym.includes('=X') || (!sym.includes('USDT') && !sym.includes('BTC/') && !sym.includes('ETH/') && (sym.includes('EUR') || sym.includes('GBP') || sym.includes('JPY') || sym.includes('AUD') || sym.includes('CAD') || sym.includes('NZD') || sym.includes('CHF') || sym.includes('/')));
+        }
+
         async function switchMarketMode(mode) {
             if (!mode) return;
             const targetMode = mode.toUpperCase();
@@ -2693,6 +2703,7 @@
             }
 
             userManualSelection = false;
+            activeSelectedSymbol = null;
 
             try {
                 const res = await fetch('/api/market-mode', {
@@ -2710,12 +2721,13 @@
             }
 
             updateSimulationPairDropdowns(targetMode);
-            fetchState();
+            await fetchState();
+            await fetchLiveData();
         }
 
         function updateSimulationPairDropdowns(mode) {
             const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT'];
-            const forexPairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF'];
+            const forexPairs = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X', 'USDCHF=X'];
             const pairs = (mode === 'FOREX') ? forexPairs : cryptoPairs;
 
             ['simSymbol', 'fs-sim-symbol', 'chart-symbol-select'].forEach(id => {
@@ -3536,25 +3548,34 @@
                 durationDays = parseInt(presetVal) || 30;
             }
 
+            const currentMode = activeMarketMode || (currentBotState ? currentBotState.market_mode : 'CRYPTO');
+            const forexSymbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X', 'USDCHF=X'];
+            const cryptoSymbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT'];
+            const symbols = (currentMode === 'FOREX') ? forexSymbols : cryptoSymbols;
+
+            const payload = {
+                market_mode: currentMode,
+                symbols: symbols,
+                test_mode: testMode,
+                duration_days: durationDays,
+                start_date: startDate,
+                end_date: endDate,
+                timeframe: timeframeVal,
+                strategy_id: strategyId,
+                initial_capital: capital,
+                position_size: size,
+                leverage: leverage,
+                score_threshold: threshVal,
+                stop_loss_pct: slVal,
+                take_profit_pct: tpVal,
+                use_custom_params: useCustom
+            };
+
             try {
                 const res = await fetch('/api/backtest/run', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        test_mode: testMode,
-                        duration_days: durationDays,
-                        start_date: startDate,
-                        end_date: endDate,
-                        timeframe: timeframeVal,
-                        strategy_id: strategyId,
-                        initial_capital: capital,
-                        position_size: size,
-                        leverage: leverage,
-                        score_threshold: threshVal,
-                        stop_loss_pct: slVal,
-                        take_profit_pct: tpVal,
-                        use_custom_params: useCustom
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
@@ -4190,7 +4211,14 @@
             const sizeInput = document.getElementById('sim-size-input');
             const customToggle = document.getElementById('sim-use-custom-toggle');
 
+            const currentFsMode = activeMarketMode || (currentBotState ? currentBotState.market_mode : 'CRYPTO');
+            const fsForexSymbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X', 'USDCHF=X'];
+            const fsCryptoSymbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT'];
+            const fsSymbols = (currentFsMode === 'FOREX') ? fsForexSymbols : fsCryptoSymbols;
+
             const payload = {
+                market_mode: currentFsMode,
+                symbols: fsSymbols,
                 test_mode: document.getElementById('fs-sim-mode').value,
                 timeframe: document.getElementById('fs-sim-timeframe').value,
                 duration_days: parseInt(document.getElementById('fs-sim-duration').value || '30'),
@@ -4388,6 +4416,33 @@
             const simSuiteCard = document.getElementById('strategy-simulation-card');
             if (simSuiteCard) {
                 simSuiteCard.addEventListener('dblclick', (e) => openFullscreenSimulationViewer(e));
+            }
+
+            const cryptoToggleBtn = document.getElementById('market-toggle-crypto');
+            if (cryptoToggleBtn) {
+                cryptoToggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    switchMarketMode('CRYPTO');
+                });
+            }
+
+            const forexToggleBtn = document.getElementById('market-toggle-forex');
+            if (forexToggleBtn) {
+                forexToggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    switchMarketMode('FOREX');
+                });
+            }
+
+            const runSimBtn = document.getElementById('btn-run-simulation');
+            if (runSimBtn) {
+                runSimBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    runBacktestSimulation(e);
+                });
             }
         });
         renderPaperTradingSuiteUI();

@@ -562,13 +562,13 @@ class PaperTradeManager:
         
         self.market_mode = market_mode
 
-        forex_pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF']
+        forex_pairs = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X', 'USDCHF=X', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF']
 
         def is_forex_sym(s: str) -> bool:
             if not s:
                 return False
             sym_u = s.upper()
-            return ("USDT" not in sym_u) and ("BTC" not in sym_u or "/" in sym_u) and ("ETH" not in sym_u or "/" in sym_u) and any(f in sym_u for f in ["EUR", "GBP", "JPY", "AUD", "CAD", "NZD", "CHF", "/"])
+            return ("USDT" not in sym_u) and ("BTC" not in sym_u or "/" in sym_u) and ("ETH" not in sym_u or "/" in sym_u) and any(f in sym_u for f in ["EUR", "GBP", "JPY", "AUD", "CAD", "NZD", "CHF", "/", "=X"])
 
         pos_list = list(self.active_positions.values())
         if market_mode == "FOREX":
