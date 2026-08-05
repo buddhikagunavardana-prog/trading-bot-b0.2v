@@ -12,11 +12,8 @@ live_data: Dict[str, Any] = {
     "active_provider": "Binance Futures",
     "alpha_scanner_results": [],
     "stream_logs": [
-        f"[{now_init}] STREAM_CONNECT: Initialized WebSocket & REST stream for 10 major pairs.",
-        f"[{now_init}] STREAM_SCAN: Multi-exchange scanner active. Primary provider: Binance Futures.",
-        f"[{now_init}] GATE_PASS: DOTUSDT (LONG) passed all pipeline gates. Score: 84.5 >= 70.0",
-        f"[{now_init}] GATE_PASS: DOGEUSDT (LONG) passed all pipeline gates. Score: 82.0 >= 70.0",
-        f"[{now_init}] GATE_PASS: BTCUSDT (LONG) passed all pipeline gates. Score: 78.5 >= 70.0"
+        f"[{now_init}] STREAM_CONNECT: Initialized WebSocket & REST stream for major market pairs.",
+        f"[{now_init}] STREAM_SCAN: Multi-exchange scanner active. Primary provider: Live Market REST API."
     ],
     "gemini_intelligence": {},
     "trade_history": _init_portfolio.get("trade_history", []),

@@ -658,10 +658,19 @@
             body {
                 padding: 10px;
             }
+            .container {
+                position: relative;
+                z-index: 1;
+                margin-top: 0;
+            }
             .header {
+                position: relative;
+                top: auto;
+                z-index: 10;
                 flex-direction: column;
                 align-items: stretch;
                 gap: 12px;
+                margin-bottom: 16px;
             }
             .title-section {
                 justify-content: space-between;
@@ -676,10 +685,27 @@
             .header-actions {
                 justify-content: space-between;
                 width: 100%;
+                flex-wrap: wrap;
             }
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+            .container {
+                position: relative;
+                z-index: 1;
+                margin-top: 0;
+                padding: 0 4px;
+            }
+            .header {
+                position: relative;
+                top: auto;
+                z-index: 10;
+                padding: 10px 14px;
+                margin-bottom: 16px;
+            }
             .dashboard-top-row {
                 grid-template-columns: 1fr;
             }

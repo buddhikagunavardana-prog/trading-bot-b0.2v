@@ -726,63 +726,6 @@ async def _fetch_live_market_data_internal():
         except Exception as err:
             logger.warning(f"Failed to trigger telegram notification task: {err}")
 
-    # Automated Trade Execution Loop: Evaluate candidate pairs against Main Control Switches and Score Threshold
-    if raw_results:
-        from trading.strategy_engine import dispatch_automated_order
-
-        master_settings = paper_trade_manager.get_master_settings()
-        threshold = float(master_settings.get("score_threshold", 70.0))
-        settings = bot_state.get("settings", {})
-        m_mode = bot_state.get("market_mode", "CRYPTO")
-
-        for candidate in raw_results:
-            cand_gate = candidate.get("gate", "BLOCKED")
-            cand_score = candidate.get("score", 0.0)
-            sym = candidate.get("symbol")
-
-            if cand_gate == "PASS" and cand_score >= threshold:
-                if sym not in paper_trade_manager.active_positions:
-                    res = dispatch_automated_order(
-                        symbol=sym,
-                        direction=candidate["direction"],
-                        price=candidate["price"],
-                        sl=candidate["sl"],
-                        tp=candidate["tp"],
-                        score=cand_score,
-                        settings=settings,
-                        master_settings=master_settings,
-                        market_mode=m_mode
-                    )
-
-                    now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
-                    if res["status"] == "SUCCESS":
-                        opened_pos = res["order"]
-                        exec_msg = f"[{now_str}] AUTO_TRADE_PLACED: Pair: {sym} ({opened_pos['side']}) | Entry: ${opened_pos['entry_price']} | SL: ${opened_pos['sl']} | TP: ${opened_pos['tp']} | Score: {cand_score}/{threshold} | Status: {res['execution_status']}"
-                        bot_state["recent_logs"].append(exec_msg)
-                        if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
-                            live_data["stream_logs"].append(exec_msg)
-
-                        # Dispatch Telegram Notification for New Trade
-                        tg_open_msg = (
-                            f"🟢 <b>NEW AUTO-TRADE EXECUTED</b>\n\n"
-                            f"<b>Symbol:</b> {sym}\n"
-                            f"<b>Direction:</b> {opened_pos['side']}\n"
-                            f"<b>Entry Price:</b> ${opened_pos['entry_price']}\n"
-                            f"<b>Stop Loss:</b> ${opened_pos['sl']}\n"
-                            f"<b>Take Profit:</b> ${opened_pos['tp']}\n"
-                            f"<b>Alpha Score:</b> {cand_score} / 100\n"
-                            f"<b>Execution Status:</b> {res['execution_status']}"
-                        )
-                        try:
-                            import asyncio
-                            asyncio.create_task(send_telegram_message(tg_open_msg))
-                        except Exception as err:
-                            logger.warning(f"Failed to trigger telegram notification task: {err}")
-                    elif res["status"] == "BLOCKED":
-                        block_msg = f"[{now_str}] AUTO_TRADE_BLOCKED: {sym} score {cand_score} >= {threshold} but Main Control Switches are OFF."
-                        if block_msg not in bot_state["recent_logs"]:
-                            bot_state["recent_logs"].append(block_msg)
-
     if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
         if len(live_data["stream_logs"]) > 35:
             live_data["stream_logs"] = live_data["stream_logs"][-35:]
