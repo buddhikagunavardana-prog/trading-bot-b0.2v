@@ -52,6 +52,11 @@ async def health_check():
 @router.get("/api/state")
 async def get_bot_state():
     try:
+        if "market_mode" not in bot_state:
+            bot_state["market_mode"] = "CRYPTO"
+        summary = paper_trade_manager.get_summary(market_mode=bot_state["market_mode"])
+        bot_state["active_positions"] = summary["active_positions"]
+        bot_state["trade_history"] = summary["trade_history"]
         return JSONResponse(status_code=200, content=bot_state)
     except Exception as e:
         logger.error(f"Error serving bot state: {e}", exc_info=True)
@@ -61,9 +66,71 @@ async def get_bot_state():
 @router.get("/api/live-data")
 async def get_live_data():
     try:
+        if "market_mode" not in live_data:
+            live_data["market_mode"] = bot_state.get("market_mode", "CRYPTO")
+        summary = paper_trade_manager.get_summary(market_mode=live_data["market_mode"])
+        live_data["active_positions"] = summary["active_positions"]
+        live_data["trade_history"] = summary["trade_history"]
         return JSONResponse(status_code=200, content=live_data)
     except Exception as e:
         logger.error(f"Error serving live data: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+
+
+@router.post("/api/market-mode")
+@router.post("/api/settings/market-mode")
+async def set_market_mode(payload: Dict[str, Any] = Body(default={})):
+    try:
+        new_mode = str(payload.get("market_mode", payload.get("mode", "CRYPTO"))).upper().strip()
+        if new_mode not in ["CRYPTO", "FOREX"]:
+            return JSONResponse(status_code=400, content={"status": "error", "detail": "Invalid market mode. Must be 'CRYPTO' or 'FOREX'."})
+
+        bot_state["market_mode"] = new_mode
+        live_data["market_mode"] = new_mode
+
+        summary = paper_trade_manager.get_summary(market_mode=new_mode)
+        
+        bot_state["active_positions"] = summary["active_positions"]
+        bot_state["trade_history"] = summary["trade_history"]
+        bot_state["wallet"] = {
+            "total_equity": summary["total_equity"],
+            "available_margin": summary["available_margin"],
+            "unrealized_pnl": summary["unrealized_pnl"],
+            "realized_pnl": summary["realized_pnl"],
+            "win_rate": summary["win_rate"],
+            "total_trades": summary["total_trades"],
+            "total_wins": summary.get("total_wins", 0),
+            "total_losses": summary.get("total_losses", 0),
+            "net_pnl": summary.get("net_pnl", 0.0),
+            "profit_factor": summary.get("profit_factor", 0.0),
+            "overall_roi": summary.get("overall_roi", 0.0)
+        }
+        bot_state["performance_metrics"] = summary.get("metrics", {})
+
+        live_data["active_positions"] = summary["active_positions"]
+        live_data["trade_history"] = summary["trade_history"]
+        live_data["wallet"] = bot_state["wallet"]
+        live_data["performance_metrics"] = summary.get("metrics", {})
+
+        now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
+        mode_label = "Forex Major Pairs (EUR/USD, GBP/USD, USD/JPY, etc.)" if new_mode == "FOREX" else "Crypto Futures Pairs (BTC/USDT, ETH/USDT, etc.)"
+        log_msg = f"[{now_str}] MARKET_MODE: Toggled market mode to {new_mode} ({mode_label}). Active feeds, logs & wallet state re-synchronized."
+        bot_state["recent_logs"].append(log_msg)
+        if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
+            live_data["stream_logs"].append(log_msg)
+
+        from services.exchange_api import run_alpha_scanner_loop
+        asyncio.create_task(run_alpha_scanner_loop())
+
+        return JSONResponse(status_code=200, content={
+            "status": "success",
+            "market_mode": new_mode,
+            "bot_state": bot_state,
+            "live_data": live_data,
+            "message": f"Market mode successfully set to {new_mode}"
+        })
+    except Exception as e:
+        logger.error(f"Error setting market mode: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 
@@ -403,12 +470,17 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
 
         use_custom_params = bool(payload.get("use_custom_params", True))
         symbols = payload.get("symbols")
+        current_market = bot_state.get("market_mode", "CRYPTO")
+        if not symbols:
+            if current_market == "FOREX":
+                symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF']
+            else:
+                symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT']
 
-        # Prefetch and cache real OKX candles for requested timeframe
+        # Prefetch and cache real candles for requested timeframe
         try:
-            from services.exchange_api import fetch_okx_candles_extended, MAJOR_PAIRS
-            sim_syms = symbols if symbols else MAJOR_PAIRS
-            for s in sim_syms:
+            from services.exchange_api import fetch_okx_candles_extended
+            for s in symbols:
                 await fetch_okx_candles_extended(s, interval=timeframe, limit=500)
         except Exception as pf_err:
             logger.warning(f"Simulation candle prefetch warning: {pf_err}")

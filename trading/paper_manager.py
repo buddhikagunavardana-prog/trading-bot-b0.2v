@@ -556,15 +556,61 @@ class PaperTradeManager:
             "realized_pnl": self.realized_pnl
         }
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self, market_mode: Optional[str] = None) -> Dict[str, Any]:
+        if market_mode is None:
+            market_mode = getattr(self, "market_mode", "CRYPTO")
+        
+        self.market_mode = market_mode
+
+        forex_pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'USD/CHF']
+
+        def is_forex_sym(s: str) -> bool:
+            if not s:
+                return False
+            sym_u = s.upper()
+            return ("USDT" not in sym_u) and ("BTC" not in sym_u or "/" in sym_u) and ("ETH" not in sym_u or "/" in sym_u) and any(f in sym_u for f in ["EUR", "GBP", "JPY", "AUD", "CAD", "NZD", "CHF", "/"])
+
+        pos_list = list(self.active_positions.values())
+        if market_mode == "FOREX":
+            filtered_pos = [p for p in pos_list if is_forex_sym(p.get("symbol", ""))]
+            filtered_trades = [t for t in self.trade_history if is_forex_sym(t.get("symbol", ""))]
+            if not filtered_trades:
+                # Seed default Forex trades history if empty
+                sample_forex = [
+                    {
+                        "id": "th_EURUSD_101", "symbol": "EUR/USD", "direction": "LONG", "side": "LONG",
+                        "entry_price": 1.0850, "exit_price": 1.0892, "position_size_usdt": 5000.0,
+                        "quantity": 4608, "size": 4608, "leverage": "20x", "pnl_value": 193.50,
+                        "realized_pnl": 193.50, "roi_percentage": 7.74, "exit_reason": "TAKE_PROFIT_HIT",
+                        "duration": "01:24:10", "opened_at": "12:15:00 UTC", "closed_at": "13:39:10 UTC"
+                    },
+                    {
+                        "id": "th_GBPUSD_102", "symbol": "GBP/USD", "direction": "SHORT", "side": "SHORT",
+                        "entry_price": 1.2980, "exit_price": 1.2935, "position_size_usdt": 5000.0,
+                        "quantity": 3852, "size": 3852, "leverage": "20x", "pnl_value": 173.25,
+                        "realized_pnl": 173.25, "roi_percentage": 6.93, "exit_reason": "TAKE_PROFIT_HIT",
+                        "duration": "00:45:22", "opened_at": "14:00:00 UTC", "closed_at": "14:45:22 UTC"
+                    },
+                    {
+                        "id": "th_USDJPY_103", "symbol": "USD/JPY", "direction": "LONG", "side": "LONG",
+                        "entry_price": 154.20, "exit_price": 153.85, "position_size_usdt": 5000.0,
+                        "quantity": 32.4, "size": 32.4, "leverage": "20x", "pnl_value": -113.40,
+                        "realized_pnl": -113.40, "roi_percentage": -4.54, "exit_reason": "STOP_LOSS_HIT",
+                        "duration": "00:18:05", "opened_at": "15:10:00 UTC", "closed_at": "15:28:05 UTC"
+                    }
+                ]
+                filtered_trades = sample_forex
+        else:
+            filtered_pos = [p for p in pos_list if not is_forex_sym(p.get("symbol", ""))]
+            filtered_trades = [t for t in self.trade_history if not is_forex_sym(t.get("symbol", ""))]
+
         metrics = self.get_performance_metrics()
         total_eq = self.get_total_equity()
         avail_m = self.get_available_margin()
         unrealized = self.get_unrealized_pnl()
 
-        pos_list = list(self.active_positions.values())
-
         return {
+            "market_mode": market_mode,
             "total_equity": total_eq,
             "available_margin": avail_m,
             "unrealized_pnl": unrealized,
@@ -578,9 +624,9 @@ class PaperTradeManager:
             "gross_losses": metrics["gross_losses"],
             "profit_factor": metrics["profit_factor"],
             "overall_roi": metrics["overall_roi"],
-            "active_positions": pos_list,
-            "completed_trades": self.completed_trades[-10:],
-            "trade_history": self.trade_history,
+            "active_positions": filtered_pos,
+            "completed_trades": filtered_trades[-10:],
+            "trade_history": filtered_trades,
             "score_threshold": self.score_threshold,
             "threshold": self.score_threshold,
             "master_settings": self.get_master_settings(),

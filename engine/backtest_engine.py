@@ -343,6 +343,13 @@ class BacktestEngine:
         "AVAX/USDT": 27.4,
         "DOT/USDT": 6.85,
         "LINK/USDT": 13.8,
+        "EUR/USD": 1.0885,
+        "GBP/USD": 1.2940,
+        "USD/JPY": 154.50,
+        "AUD/USD": 0.6580,
+        "USD/CAD": 1.3780,
+        "NZD/USD": 0.5980,
+        "USD/CHF": 0.8840,
     }
 
     def _generate_synthetic_candles(self, symbol: str, num_bars: int, start_time: datetime, bar_duration_hours: int = 1) -> List[Dict[str, Any]]:

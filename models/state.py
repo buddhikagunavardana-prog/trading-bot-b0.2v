@@ -7,6 +7,7 @@ _init_portfolio = paper_trade_manager.get_summary()
 # Live Data State for Provider Failover Mechanism
 now_init = datetime.utcnow().strftime("%H:%M:%S UTC")
 live_data: Dict[str, Any] = {
+    "market_mode": "CRYPTO",
     "btc_price": 65420.50,
     "active_provider": "Binance Futures",
     "alpha_scanner_results": [],
@@ -39,6 +40,7 @@ live_data: Dict[str, Any] = {
 
 # In-Memory State for Interactive Controls & Live Diagnostics
 bot_state: Dict[str, Any] = {
+    "market_mode": "CRYPTO",
     "settings": {
         "paper_trading": True,
         "legacy_engine": False,
