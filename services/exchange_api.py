@@ -559,6 +559,7 @@ async def _fetch_live_market_data_internal():
                 "sl": item["sl"],
                 "tp": item["tp"],
                 "rr": item["rr"],
+                "execution_status": "ORDER_PLACED" if item["symbol"] in paper_trade_manager.active_positions else ("AUTO_EXEC_READY" if item["gate"] == "PASS" and item["score"] >= threshold else "GATE_BLOCKED"),
                 "liquidity": random.randint(80, 99),
                 "flow": "HEAVY_BUY_FLOW" if item["direction"] == "LONG" else "SELL_SIDE_PRESSURE",
                 "reasons": [
@@ -661,54 +662,62 @@ async def _fetch_live_market_data_internal():
         except Exception as err:
             logger.warning(f"Failed to trigger telegram notification task: {err}")
 
-    # Check #1 ranked pair for automated execution if paper trading is enabled
-    if raw_results and bot_state.get("settings", {}).get("paper_trading", True):
+    # Automated Trade Execution Loop: Evaluate candidate pairs against Main Control Switches and Score Threshold
+    if raw_results:
+        from trading.strategy_engine import dispatch_automated_order
+
         master_settings = paper_trade_manager.get_master_settings()
-        threshold = master_settings["score_threshold"]
-        pos_size_usdt = master_settings["position_size"]
-        lev = master_settings["leverage"]
+        threshold = float(master_settings.get("score_threshold", 70.0))
+        settings = bot_state.get("settings", {})
+        m_mode = bot_state.get("market_mode", "CRYPTO")
 
-        top_pair = raw_results[0]
-        gate_status = top_pair.get("gate", "BLOCKED")
-        top_score = top_pair.get("score", 0.0)
+        for candidate in raw_results:
+            cand_gate = candidate.get("gate", "BLOCKED")
+            cand_score = candidate.get("score", 0.0)
+            sym = candidate.get("symbol")
 
-        if gate_status == "PASS" and top_score >= threshold:
-            sym = top_pair["symbol"]
-            if sym not in paper_trade_manager.active_positions:
-                opened_pos = paper_trade_manager.execute_trade(
-                    symbol=sym,
-                    side=top_pair["direction"],
-                    entry_price=top_pair["price"],
-                    sl=top_pair["sl"],
-                    tp=top_pair["tp"],
-                    score=top_score,
-                    leverage=lev,
-                    position_size_usdt=pos_size_usdt,
-                    rsi_entry=top_pair.get("rsi_15m", 62.4),
-                    sma50_entry=top_pair.get("sma50", round(top_pair["price"] * 0.98, 2))
-                )
-                if opened_pos:
-                    now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
-                    exec_msg = f"[{now_str}] TRADE_EXEC: Executed {opened_pos['side']} paper trade for {sym} @ ${opened_pos['entry_price']} (Score: {top_score}/{threshold}, Gate: PASS, Size: {opened_pos['size']})"
-                    bot_state["recent_logs"].append(exec_msg)
-                    if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
-                        live_data["stream_logs"].append(exec_msg)
-
-                    # Dispatch Telegram Notification for New Trade
-                    tg_open_msg = (
-                        f"🟢 <b>NEW TRADE OPENED</b>\n\n"
-                        f"<b>Symbol:</b> {sym}\n"
-                        f"<b>Direction:</b> {opened_pos['side']}\n"
-                        f"<b>Entry Price:</b> ${opened_pos['entry_price']}\n"
-                        f"<b>Stop Loss:</b> ${opened_pos['sl']}\n"
-                        f"<b>Take Profit:</b> ${opened_pos['tp']}\n"
-                        f"<b>Alpha Score:</b> {top_score} / 100"
+            if cand_gate == "PASS" and cand_score >= threshold:
+                if sym not in paper_trade_manager.active_positions:
+                    res = dispatch_automated_order(
+                        symbol=sym,
+                        direction=candidate["direction"],
+                        price=candidate["price"],
+                        sl=candidate["sl"],
+                        tp=candidate["tp"],
+                        score=cand_score,
+                        settings=settings,
+                        master_settings=master_settings,
+                        market_mode=m_mode
                     )
-                    try:
-                        import asyncio
-                        asyncio.create_task(send_telegram_message(tg_open_msg))
-                    except Exception as err:
-                        logger.warning(f"Failed to trigger telegram notification task: {err}")
+
+                    now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
+                    if res["status"] == "SUCCESS":
+                        opened_pos = res["order"]
+                        exec_msg = f"[{now_str}] AUTO_TRADE_PLACED: Pair: {sym} ({opened_pos['side']}) | Entry: ${opened_pos['entry_price']} | SL: ${opened_pos['sl']} | TP: ${opened_pos['tp']} | Score: {cand_score}/{threshold} | Status: {res['execution_status']}"
+                        bot_state["recent_logs"].append(exec_msg)
+                        if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
+                            live_data["stream_logs"].append(exec_msg)
+
+                        # Dispatch Telegram Notification for New Trade
+                        tg_open_msg = (
+                            f"🟢 <b>NEW AUTO-TRADE EXECUTED</b>\n\n"
+                            f"<b>Symbol:</b> {sym}\n"
+                            f"<b>Direction:</b> {opened_pos['side']}\n"
+                            f"<b>Entry Price:</b> ${opened_pos['entry_price']}\n"
+                            f"<b>Stop Loss:</b> ${opened_pos['sl']}\n"
+                            f"<b>Take Profit:</b> ${opened_pos['tp']}\n"
+                            f"<b>Alpha Score:</b> {cand_score} / 100\n"
+                            f"<b>Execution Status:</b> {res['execution_status']}"
+                        )
+                        try:
+                            import asyncio
+                            asyncio.create_task(send_telegram_message(tg_open_msg))
+                        except Exception as err:
+                            logger.warning(f"Failed to trigger telegram notification task: {err}")
+                    elif res["status"] == "BLOCKED":
+                        block_msg = f"[{now_str}] AUTO_TRADE_BLOCKED: {sym} score {cand_score} >= {threshold} but Main Control Switches are OFF."
+                        if block_msg not in bot_state["recent_logs"]:
+                            bot_state["recent_logs"].append(block_msg)
 
     if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
         if len(live_data["stream_logs"]) > 35:

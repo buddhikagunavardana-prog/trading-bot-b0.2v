@@ -1435,11 +1435,14 @@
                     </div>
                 </div>
 
-                <!-- BTC/USDT Candle Readiness Diagnostics Card -->
+                <!-- Candle Readiness Diagnostics Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">🕯️ BTC/USDT Candle Readiness Diagnostics</h3>
-                        <button class="btn btn-danger" onclick="triggerDataReset()">Reset Paper Data</button>
+                        <h3 class="card-title">🕯️ Candle Readiness Diagnostics</h3>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-purple" style="font-size:11px; padding:4px 8px;" onclick="triggerBootstrapRetry()">⚡ Retry Data Bootstrap</button>
+                            <button class="btn btn-danger" style="font-size:11px; padding:4px 8px;" onclick="triggerDataReset()">Reset Paper Data</button>
+                        </div>
                     </div>
                     <div style="max-height:160px; overflow-y:auto;">
                         <table class="custom-table">
@@ -1514,7 +1517,8 @@
                                     <th>Symbol</th>
                                     <th>Score</th>
                                     <th>Dir</th>
-                                    <th>Gate</th>
+                                    <th>Gate Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="candidates-table-body">
@@ -1585,6 +1589,14 @@
                         <div><span class="metric-label">R:R Ratio:</span><br><b style="color:var(--accent-yellow);" id="plan-rr">1:2.45</b></div>
                     </div>
 
+                    <!-- Direct Order Placement Trigger Button & Status Indicator -->
+                    <div style="margin-bottom:12px;">
+                        <button class="btn" id="btn-execute-selected-plan" onclick="executeSelectedPlanTrade()" style="width:100%; padding:10px; font-size:12px; font-weight:bold; background:linear-gradient(135deg, #00f090, #089981); color:#0b0e14; border:none; border-radius:6px; cursor:pointer; box-shadow:0 4px 14px rgba(0,240,144,0.3); transition:all 0.2s ease;">
+                            🚀 Trigger Trade Order Execution
+                        </button>
+                        <div id="plan-trade-exec-msg" style="display:none; margin-top:8px; padding:8px 12px; border-radius:4px; font-size:11px; font-weight:bold; text-align:center;"></div>
+                    </div>
+
                     <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">WHY THIS SCORE? (LOGIC REASONS)</div>
                     <ul id="plan-reasons-list" style="margin:0; padding-left:18px; font-size:11px; color:var(--text-main);">
                         <li>Strong 15m/1h Momentum Alignment</li>
@@ -1642,7 +1654,7 @@
                 <h3 class="card-title">📜 Terminal Logs & Events</h3>
                 <span style="color:var(--text-muted); font-size:11px;">AUTO-SCROLLING</span>
             </div>
-            <div class="logs-box" id="logs-container">
+            <div class="logs-box" id="logs-container-2">
                 <!-- Rendered dynamically -->
             </div>
         </div>
@@ -2255,15 +2267,9 @@
             `).join('');
 
             // Candle readiness
-            const candleBody = document.getElementById('candle-readiness-body');
-            candleBody.innerHTML = data.candles_readiness.map(c => `
-                <tr>
-                    <td><b>${c.tf}</b></td>
-                    <td>${c.count} / ${c.required}</td>
-                    <td><span class="badge-pass">${c.status}</span></td>
-                    <td>$${c.last_close.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
-            `).join('');
+            if (data.candles_readiness) {
+                renderCandleReadiness(data.candles_readiness);
+            }
 
             // Scoreboard & Candidates
             const threshStr = (tVal % 1 === 0) ? tVal.toFixed(0) : tVal.toFixed(1);
@@ -2292,15 +2298,30 @@
             // Candidates table
             const candBody = document.getElementById('candidates-table-body');
             if (candBody && data.candidates) {
-                candBody.innerHTML = data.candidates.map((c, idx) => `
-                    <tr style="cursor:pointer;" onclick="selectCandidate('${c.symbol}', true)">
-                        <td>#${c.rank !== undefined ? c.rank : (idx + 1)}</td>
-                        <td><b>${c.symbol}</b></td>
-                        <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
-                        <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
-                        <td><span class="${c.gate === 'PASS' ? 'badge-pass' : 'badge-fail'}">${c.gate}</span></td>
-                    </tr>
-                `).join('');
+                candBody.innerHTML = data.candidates.map((c, idx) => {
+                    const isPlaced = (data.active_positions && Array.isArray(data.active_positions) && data.active_positions.some(p => p.symbol === c.symbol)) ||
+                                     (latestLiveData && Array.isArray(latestLiveData.active_positions) && latestLiveData.active_positions.some(p => p.symbol === c.symbol));
+                    const statusBadge = isPlaced
+                        ? '<span class="badge-pass" style="background:rgba(0,240,144,0.2); color:#00f090; font-size:10px;">🟢 PLACED</span>'
+                        : (c.gate === 'PASS'
+                            ? '<span class="badge-pass" style="background:rgba(100,181,246,0.2); color:#64b5f6; font-size:10px;">⚡ AUTO-READY</span>'
+                            : '<span class="badge-fail" style="font-size:10px;">BLOCKED</span>');
+                    const px = c.price || c.entry || 0;
+                    return `
+                        <tr style="cursor:pointer;" onclick="selectCandidate('${c.symbol}', true)">
+                            <td>#${c.rank !== undefined ? c.rank : (idx + 1)}</td>
+                            <td><b>${c.symbol}</b></td>
+                            <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
+                            <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button class="btn" style="padding:2px 8px; font-size:10px; background:linear-gradient(135deg, #00f090, #089981); color:#000; font-weight:bold; border:none; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); executeTradeForPair('${c.symbol}', '${c.direction}', ${px}, ${c.sl}, ${c.tp}, ${c.score});">
+                                    ⚡ Trade
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
 
             // Streams
@@ -2337,9 +2358,7 @@
 
             // Logs
             if (data.recent_logs) {
-                const logsBox = document.getElementById('logs-container');
-                logsBox.innerHTML = data.recent_logs.map(l => `<div class="log-line">${l}</div>`).join('');
-                logsBox.scrollTop = logsBox.scrollHeight;
+                renderTerminalLogs(data.recent_logs);
             }
 
             // Keep Trade Plan card synced with top candidate unless user explicitly selected a symbol
@@ -2797,15 +2816,30 @@
 
                 const candBody = document.getElementById('candidates-table-body');
                 if (candBody) {
-                    candBody.innerHTML = candidates.map((c, idx) => `
-                        <tr style="cursor:pointer;" onclick="selectCandidate('${c.symbol}', true)">
-                            <td>#${c.rank !== undefined ? c.rank : (idx + 1)}</td>
-                            <td><b>${c.symbol}</b></td>
-                            <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
-                            <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
-                            <td><span class="${c.gate === 'PASS' ? 'badge-pass' : 'badge-fail'}">${c.gate}</span></td>
-                        </tr>
-                    `).join('');
+                    candBody.innerHTML = candidates.map((c, idx) => {
+                        const isPlaced = (latestLiveData && Array.isArray(latestLiveData.active_positions) && latestLiveData.active_positions.some(p => p.symbol === c.symbol)) ||
+                                         (currentBotState && Array.isArray(currentBotState.active_positions) && currentBotState.active_positions.some(p => p.symbol === c.symbol));
+                        const statusBadge = isPlaced
+                            ? '<span class="badge-pass" style="background:rgba(0,240,144,0.2); color:#00f090; font-size:10px;">🟢 PLACED</span>'
+                            : (c.gate === 'PASS'
+                                ? '<span class="badge-pass" style="background:rgba(100,181,246,0.2); color:#64b5f6; font-size:10px;">⚡ AUTO-READY</span>'
+                                : '<span class="badge-fail" style="font-size:10px;">BLOCKED</span>');
+                        const px = c.price || c.entry || 0;
+                        return `
+                            <tr style="cursor:pointer;" onclick="selectCandidate('${c.symbol}', true)">
+                                <td>#${c.rank !== undefined ? c.rank : (idx + 1)}</td>
+                                <td><b>${c.symbol}</b></td>
+                                <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
+                                <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
+                                <td>${statusBadge}</td>
+                                <td>
+                                    <button class="btn" style="padding:2px 8px; font-size:10px; background:linear-gradient(135deg, #00f090, #089981); color:#000; font-weight:bold; border:none; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); executeTradeForPair('${c.symbol}', '${c.direction}', ${px}, ${c.sl}, ${c.tp}, ${c.score});">
+                                        ⚡ Trade
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 }
             }
 
@@ -2985,11 +3019,102 @@
 
         const saveThreshold = saveThresholdFromUI;
 
+        function renderTerminalLogs(logsList) {
+            if (!logsList || !Array.isArray(logsList) || logsList.length === 0) return;
+            const htmlContent = logsList.map(l => {
+                let color = 'var(--text-main)';
+                if (l.includes('TRADE_EXEC') || l.includes('GATE_PASS') || l.includes('TRADE_WON') || l.includes('SUCCESS') || l.includes('ORDER_PLACED') || l.includes('AUTO_TRADE_PLACED')) color = 'var(--accent-green-bright)';
+                else if (l.includes('GATE_BLOCKED') || l.includes('TRADE_CLOSE') || l.includes('DEGRADED') || l.includes('FAIL') || l.includes('ORDER_BLOCKED') || l.includes('BLOCKED')) color = 'var(--accent-red)';
+                else if (l.includes('STREAM_SCAN') || l.includes('TICK') || l.includes('CONFIG') || l.includes('DIAGNOSTIC') || l.includes('DATA_BOOTSTRAP')) color = 'var(--accent-yellow)';
+                else if (l.includes('STREAM_CONNECT') || l.includes('SIMULATION')) color = '#90caf9';
+                return `<div class="log-line" style="color:${color}; margin-bottom:3px; line-height:1.4;">${l}</div>`;
+            }).join('');
+
+            const boxes = document.querySelectorAll('.logs-box, #logs-container, #logs-container-2, #stream-logs-box');
+            boxes.forEach(box => {
+                if (box) {
+                    box.innerHTML = htmlContent;
+                    box.scrollTop = box.scrollHeight;
+                }
+            });
+        }
+
+        function renderCandleReadiness(readiness) {
+            const candleBody = document.getElementById('candle-readiness-body');
+            if (!candleBody || !readiness || !Array.isArray(readiness)) return;
+            candleBody.innerHTML = readiness.map(c => `
+                <tr>
+                    <td><b>${c.tf}</b></td>
+                    <td>${c.count} / ${c.required}</td>
+                    <td><span class="${c.status === 'READY' ? 'badge-pass' : 'badge-fail'}">${c.status}</span></td>
+                    <td>$${typeof c.last_close === 'number' ? c.last_close.toLocaleString('en-US', {minimumFractionDigits: c.last_close < 10 ? 4 : 2}) : c.last_close}</td>
+                </tr>
+            `).join('');
+        }
+
+        let terminalLogsWs = null;
+        let terminalLogsReconnectTimer = null;
+
+        function initTerminalLogsStream() {
+            if (terminalLogsWs) {
+                try { terminalLogsWs.close(); } catch(e) {}
+            }
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = wsProtocol + '//' + window.location.host + '/api/terminal/stream';
+
+            try {
+                terminalLogsWs = new WebSocket(wsUrl);
+                terminalLogsWs.onopen = function() {
+                    console.log("Terminal Logs WebSocket connected.");
+                    if (terminalLogsReconnectTimer) {
+                        clearTimeout(terminalLogsReconnectTimer);
+                        terminalLogsReconnectTimer = null;
+                    }
+                };
+                terminalLogsWs.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.recent_logs && Array.isArray(data.recent_logs)) {
+                            renderTerminalLogs(data.recent_logs);
+                        }
+                    } catch(e) {
+                        console.error("Error parsing terminal logs message:", e);
+                    }
+                };
+                terminalLogsWs.onerror = function() {
+                    scheduleTerminalLogsReconnect();
+                };
+                terminalLogsWs.onclose = function() {
+                    scheduleTerminalLogsReconnect();
+                };
+            } catch(e) {
+                scheduleTerminalLogsReconnect();
+            }
+        }
+
+        function scheduleTerminalLogsReconnect() {
+            if (!terminalLogsReconnectTimer) {
+                terminalLogsReconnectTimer = setTimeout(() => {
+                    terminalLogsReconnectTimer = null;
+                    initTerminalLogsStream();
+                }, 3000);
+            }
+        }
+
         async function triggerBootstrapRetry() {
             try {
-                await fetch('/api/bootstrap/retry', {method: 'POST'});
+                const resp = await fetch('/api/bootstrap/retry', {method: 'POST'});
+                const res = await resp.json();
+                if (res.candles_readiness) {
+                    renderCandleReadiness(res.candles_readiness);
+                }
+                if (res.recent_logs) {
+                    renderTerminalLogs(res.recent_logs);
+                }
                 fetchState();
-            } catch(e) { console.error(e); }
+            } catch(e) {
+                console.error("Bootstrap retry error:", e);
+            }
         }
 
         async function triggerDataReset() {
@@ -3010,6 +3135,102 @@
                 ? latestLiveData.alpha_scanner_results[0].symbol
                 : (currentBotState && currentBotState.scoreboard ? currentBotState.scoreboard.top_candidate : 'DOTUSDT');
             selectCandidate(topSymbol, false);
+        }
+
+        async function executeTradeForPair(symbol, direction, price, sl, tp, score) {
+            try {
+                const resp = await fetch('/api/trade/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        symbol: symbol,
+                        direction: direction,
+                        price: price,
+                        sl: sl,
+                        tp: tp,
+                        score: score
+                    })
+                });
+                const res = await resp.json();
+                if (resp.ok && res.status === 'success') {
+                    alert(`🚀 Trade Order Executed for ${symbol}!\nStatus: ${res.execution_status}\nEntry: $${price} | SL: $${sl} | TP: $${tp}`);
+                    fetchState();
+                } else {
+                    alert(`⚠️ Execution Notice: ${res.message || res.detail || 'Could not place order.'}`);
+                }
+            } catch(e) {
+                console.error('Failed to execute trade:', e);
+                alert('Error connecting to trade execution pipeline endpoint.');
+            }
+        }
+
+        async function executeSelectedPlanTrade() {
+            const symbolElem = document.getElementById('plan-symbol');
+            const symbol = symbolElem ? symbolElem.innerText.trim() : null;
+            if (!symbol) return;
+
+            let cand = null;
+            if (latestLiveData && latestLiveData.alpha_scanner_results) {
+                cand = latestLiveData.alpha_scanner_results.find(c => c.symbol === symbol || c.symbol.replace('/', '') === symbol.replace('/', ''));
+            }
+            if (!cand && currentBotState && currentBotState.candidates) {
+                cand = currentBotState.candidates.find(c => c.symbol === symbol || c.symbol.replace('/', '') === symbol.replace('/', ''));
+            }
+
+            const direction = cand ? cand.direction : 'LONG';
+            const priceVal = cand ? (cand.price !== undefined ? cand.price : cand.entry) : 100.0;
+            const sl = cand ? cand.sl : priceVal * 0.965;
+            const tp = cand ? cand.tp : priceVal * 1.055;
+            const score = cand ? cand.score : 80.0;
+
+            const btn = document.getElementById('btn-execute-selected-plan');
+            const msgElem = document.getElementById('plan-trade-exec-msg');
+
+            if (btn) btn.disabled = true;
+            if (msgElem) {
+                msgElem.style.display = 'block';
+                msgElem.style.background = 'rgba(100,181,246,0.2)';
+                msgElem.style.color = '#64b5f6';
+                msgElem.innerText = '⚡ Transmitting order to broker execution pipeline...';
+            }
+
+            try {
+                const resp = await fetch('/api/trade/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        symbol: symbol,
+                        direction: direction,
+                        price: priceVal,
+                        sl: sl,
+                        tp: tp,
+                        score: score
+                    })
+                });
+                const res = await resp.json();
+                if (resp.ok && res.status === 'success') {
+                    if (msgElem) {
+                        msgElem.style.background = 'rgba(0,240,144,0.2)';
+                        msgElem.style.color = '#00f090';
+                        msgElem.innerText = `🟢 ORDER EXECUTED! Pair: ${symbol} | Status: ${res.execution_status}`;
+                    }
+                    fetchState();
+                } else {
+                    if (msgElem) {
+                        msgElem.style.background = 'rgba(255,82,82,0.2)';
+                        msgElem.style.color = 'var(--accent-red)';
+                        msgElem.innerText = `⚠️ Execution Blocked: ${res.message || res.detail || 'Failed'}`;
+                    }
+                }
+            } catch(e) {
+                if (msgElem) {
+                    msgElem.style.background = 'rgba(255,82,82,0.2)';
+                    msgElem.style.color = 'var(--accent-red)';
+                    msgElem.innerText = '⚠️ Network error communicating with execution pipeline.';
+                }
+            } finally {
+                if (btn) btn.disabled = false;
+            }
         }
 
         function selectCandidate(symbol, isUserClick = false) {
@@ -4452,6 +4673,7 @@
         renderPaperTradingSuiteUI();
         loadBacktestStrategies();
         initLiveStreamWebSocket();
+        initTerminalLogsStream();
         fetchState();
         fetchLiveData();
 
