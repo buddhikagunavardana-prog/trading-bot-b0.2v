@@ -1,7 +1,11 @@
+import os
+import json
+import time
+import asyncio
 import random
 import logging
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import httpx
 
 from models.data_models import CryptoTicker, MarketRegime
@@ -12,6 +16,12 @@ from services.ai_agent import generate_post_trade_report, get_gemini_analysis
 from services.telegram_bot import send_telegram_message
 
 logger = logging.getLogger("CryptoBot")
+
+CACHE_DIR = "data_cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# Fast in-memory cache
+MEMORY_KLINE_CACHE: Dict[str, Dict[str, Any]] = {}
 
 MAJOR_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT', 'BNBUSDT']
 
@@ -27,6 +37,159 @@ BASE_PRICES: Dict[str, float] = {
     'LINKUSDT': 13.80,
     'BNBUSDT': 580.00
 }
+
+
+def get_cache_filepath(symbol: str, interval: str) -> str:
+    clean_sym = symbol.replace("/", "").replace("-", "").upper()
+    clean_tf = interval.lower().strip()
+    return os.path.join(CACHE_DIR, f"klines_{clean_sym}_{clean_tf}.json")
+
+
+def load_klines_from_disk_cache(symbol: str, interval: str, max_age_seconds: int = 300) -> Optional[List[Dict[str, Any]]]:
+    filepath = get_cache_filepath(symbol, interval)
+    if not os.path.exists(filepath):
+        return None
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        updated_ts = data.get("updated_ts", 0)
+        if max_age_seconds > 0 and (time.time() - updated_ts > max_age_seconds):
+            # Cache is stale
+            return None
+        candles = data.get("candles", [])
+        if candles and isinstance(candles, list):
+            return candles
+    except Exception as e:
+        logger.warning(f"[CACHE] Failed to load disk cache {filepath}: {e}")
+    return None
+
+
+def save_klines_to_disk_cache(symbol: str, interval: str, candles: List[Dict[str, Any]]):
+    filepath = get_cache_filepath(symbol, interval)
+    try:
+        existing = load_klines_from_disk_cache(symbol, interval, max_age_seconds=-1) or []
+        by_ts = {}
+        for c in existing:
+            if isinstance(c, dict) and "timestamp" in c:
+                by_ts[c["timestamp"]] = c
+        for c in candles:
+            if isinstance(c, dict) and "timestamp" in c:
+                by_ts[c["timestamp"]] = c
+        merged = sorted(by_ts.values(), key=lambda x: str(x.get("timestamp", "")))
+
+        if len(merged) > 2000:
+            merged = merged[-2000:]
+
+        payload = {
+            "symbol": symbol,
+            "interval": interval,
+            "updated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "updated_ts": time.time(),
+            "count": len(merged),
+            "candles": merged
+        }
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+        logger.debug(f"[CACHE] Saved {len(merged)} candles to {filepath}")
+    except Exception as e:
+        logger.warning(f"[CACHE] Failed to save disk cache {filepath}: {e}")
+
+
+async def fetch_okx_candles_extended(
+    symbol: str,
+    interval: str = "15m",
+    limit: int = 200,
+    client: Optional[httpx.AsyncClient] = None
+) -> List[Dict[str, Any]]:
+    """
+    Fetches real historical OHLCV candles from OKX REST API across extended periods.
+    Handles rate limits gracefully with retry backoff, pagination (`after`), and local disk cache persistence.
+    """
+    inv = interval.lower().strip()
+    if inv in ["1m", "5m", "15m", "30m"]:
+        bar = inv
+    elif inv in ["1h", "2h", "4h"]:
+        bar = inv.upper()
+    elif inv in ["1d", "1w"]:
+        bar = inv.upper()
+    elif inv in ["5y", "5d"]:
+        bar = "1D"
+    else:
+        bar = "15m"
+
+    inst_id = symbol.replace("/", "").replace("-", "")
+    if not inst_id.endswith("-USDT") and inst_id.endswith("USDT"):
+        inst_id = inst_id[:-4] + "-USDT"
+
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    close_client = False
+    if client is None:
+        client = httpx.AsyncClient(timeout=6.0)
+        close_client = True
+
+    all_fetched_candles: List[Dict[str, Any]] = []
+    after_ts = ""
+    pages_needed = min(10, max(1, (limit + 99) // 100))
+
+    try:
+        for page in range(pages_needed):
+            url = f"https://www.okx.com/api/v5/market/candles?instId={inst_id}&bar={bar}&limit=100"
+            if after_ts:
+                url += f"&after={after_ts}"
+
+            success = False
+            for retry in range(3):
+                try:
+                    res = await client.get(url, headers=headers)
+                    if res.status_code == 200:
+                        data = res.json()
+                        c_list = data.get("data", [])
+                        if isinstance(c_list, list) and len(c_list) > 0:
+                            for item in c_list:
+                                ts_ms = int(item[0])
+                                dt_str = datetime.utcfromtimestamp(ts_ms / 1000.0).strftime("%Y-%m-%d %H:%M")
+                                all_fetched_candles.append({
+                                    "timestamp": dt_str,
+                                    "ts_ms": ts_ms,
+                                    "open": float(item[1]),
+                                    "high": float(item[2]),
+                                    "low": float(item[3]),
+                                    "close": float(item[4]),
+                                    "volume": float(item[5])
+                                })
+                            after_ts = str(c_list[-1][0])
+                            success = True
+                            break
+                        else:
+                            success = True
+                            break
+                    elif res.status_code == 429:
+                        await asyncio.sleep(0.3 * (retry + 1))
+                    else:
+                        await asyncio.sleep(0.1 * (retry + 1))
+                except Exception:
+                    await asyncio.sleep(0.1 * (retry + 1))
+
+            if not success or not after_ts:
+                break
+
+            if pages_needed > 1:
+                await asyncio.sleep(0.08)
+
+    except Exception as e:
+        logger.warning(f"[OKX FETCH] Error fetching {symbol} ({interval}): {e}")
+    finally:
+        if close_client:
+            await client.aclose()
+
+    if all_fetched_candles:
+        by_ts = {c["ts_ms"]: c for c in all_fetched_candles}
+        sorted_candles = [by_ts[k] for k in sorted(by_ts.keys())]
+        save_klines_to_disk_cache(symbol, interval, sorted_candles)
+        return sorted_candles
+
+    cached = load_klines_from_disk_cache(symbol, interval, max_age_seconds=-1)
+    return cached or []
 
 
 def generate_synthetic_klines(current_price: float, count: int = 200) -> List[float]:
@@ -69,58 +232,85 @@ async def fetch_klines(
 ) -> List[float]:
     """
     Fetches historical candle closing prices from active exchange REST APIs.
-    Prioritizes OKX API for stability and performance.
-    Falls back to synthetic historical prices ending at current_price if requests fail.
+    Uses memory & disk cache, pulls from OKX REST API with rate limit handling,
+    and falls back to Bybit/Binance/Synthetic if offline/throttled.
     """
+    cache_key = f"{symbol}_{interval.lower().strip()}"
+    now_ts = time.time()
+
+    if cache_key in MEMORY_KLINE_CACHE:
+        c_meta = MEMORY_KLINE_CACHE[cache_key]
+        if now_ts - c_meta["timestamp"] < 30.0 and len(c_meta["closes"]) >= min(limit, 50):
+            return c_meta["closes"][-limit:]
+
+    candles = await fetch_okx_candles_extended(symbol, interval, limit=limit, client=client)
+    if candles and len(candles) >= 14:
+        closes = [float(c["close"]) for c in candles]
+        MEMORY_KLINE_CACHE[cache_key] = {
+            "timestamp": now_ts,
+            "candles": candles,
+            "closes": closes
+        }
+        return closes[-limit:]
+
+    # Fallback to Bybit / Binance
+    candidate_providers = ["BYBIT", "BINANCE"]
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    candidate_providers = ["OKX"]
-    if provider in ["OKX", "BYBIT", "BINANCE"] and provider not in candidate_providers:
-        candidate_providers.append(provider)
-    for p in ["BYBIT", "BINANCE"]:
-        if p not in candidate_providers:
-            candidate_providers.append(p)
+    inv = interval.lower().strip()
 
     for p in candidate_providers:
         try:
-            if p == "OKX":
-                bar = "15m" if interval == "15m" else "1H"
-                inst_id = symbol.replace("USDT", "-USDT")
-                url = f"https://www.okx.com/api/v5/market/candles?instId={inst_id}&bar={bar}&limit={limit}"
-                res = await client.get(url, headers=headers)
-                if res.status_code == 200:
-                    data = res.json()
-                    c_list = data.get("data", [])
-                    if isinstance(c_list, list) and len(c_list) >= 14:
-                        c_list_sorted = c_list[::-1]  # Chronological order
-                        return [float(c[4]) for c in c_list_sorted]
-                logger.warning(f"OKX kline status {res.status_code} for {symbol}. Trying next provider.")
-
-            elif p == "BYBIT":
-                interval_str = "15" if interval == "15m" else "60"
-                url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval={interval_str}&limit={limit}"
+            if p == "BYBIT":
+                bybit_map = {"1m": "1", "5m": "5", "15m": "15", "30m": "30", "1h": "60", "4h": "240", "1d": "D", "5y": "D"}
+                interval_str = bybit_map.get(inv, "15")
+                url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval={interval_str}&limit={min(limit, 200)}"
                 res = await client.get(url, headers=headers)
                 if res.status_code == 200:
                     data = res.json()
                     c_list = data.get("result", {}).get("list", [])
                     if isinstance(c_list, list) and len(c_list) >= 14:
-                        c_list_sorted = c_list[::-1]  # Chronological order
-                        return [float(c[4]) for c in c_list_sorted]
-                logger.warning(f"Bybit kline status {res.status_code} for {symbol}. Trying next provider.")
-
+                        c_list_sorted = c_list[::-1]
+                        closes = [float(c[4]) for c in c_list_sorted]
+                        return closes
             elif p == "BINANCE":
-                url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+                binance_map = {"1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1h", "4h": "4h", "1d": "1d", "5y": "1d"}
+                bin_inv = binance_map.get(inv, "15m")
+                url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={bin_inv}&limit={min(limit, 200)}"
                 res = await client.get(url, headers=headers)
                 if res.status_code == 200:
                     data = res.json()
                     if isinstance(data, list) and len(data) >= 14:
-                        return [float(c[4]) for c in data]
-                logger.warning(f"Binance kline status {res.status_code} for {symbol}. Trying next provider.")
-
+                        closes = [float(c[4]) for c in data]
+                        return closes
         except Exception as e:
-            logger.warning(f"Kline fetch error for {symbol} ({p}): {e}")
+            logger.warning(f"Fallback provider {p} error for {symbol}: {e}")
 
-    # Fallback to synthetic klines ending at current price
+    disk_cached = load_klines_from_disk_cache(symbol, interval, max_age_seconds=-1)
+    if disk_cached and len(disk_cached) >= 14:
+        closes = [float(c["close"]) for c in disk_cached]
+        return closes[-limit:]
+
     return generate_synthetic_klines(current_price, count=limit)
+
+
+async def prefetch_all_timeframes_cache(
+    symbols: List[str] = MAJOR_PAIRS,
+    timeframes: List[str] = ["1m", "5m", "15m", "1h", "4h", "1D"]
+):
+    """
+    Prefetches and updates local disk cache files for all pairs and timeframes from OKX.
+    Handles rate limits gracefully with pauses between requests.
+    """
+    logger.info(f"[PREFETCH] Starting automatic candle caching for {len(symbols)} pairs across {timeframes}...")
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        for tf in timeframes:
+            for sym in symbols:
+                try:
+                    await fetch_okx_candles_extended(sym, interval=tf, limit=300, client=client)
+                    await asyncio.sleep(0.05)
+                except Exception as e:
+                    logger.warning(f"[PREFETCH] Error prefetching {sym} {tf}: {e}")
+    logger.info("[PREFETCH] Completed prefetching and caching candle datasets.")
 
 
 async def fetch_live_market_data():
@@ -204,6 +394,7 @@ async def _fetch_live_market_data_internal():
         raw_results = []
         master_settings = paper_trade_manager.get_master_settings()
         threshold = float(master_settings.get("score_threshold", bot_state.get("score_threshold", bot_state.get("threshold", 70.0))))
+        active_tf = str(master_settings.get("timeframe", "15m"))
         bot_state["threshold"] = threshold
         bot_state["score_threshold"] = threshold
 
@@ -222,13 +413,13 @@ async def _fetch_live_market_data_internal():
 
             ticker_obj = CryptoTicker(symbol=sym, price=price, change_24h_pct=chg)
 
-            # Fetch real candles for indicators
-            klines_15m = await fetch_klines(sym, winning_provider, client, price, interval="15m", limit=100)
+            # Fetch real candles for indicators using configured master timeframe
+            klines_primary = await fetch_klines(sym, winning_provider, client, price, interval=active_tf, limit=100)
             klines_1h = await fetch_klines(sym, winning_provider, client, price, interval="1h", limit=100)
 
-            rsi_15m = calculate_rsi(klines_15m, period=14)
+            rsi_15m = calculate_rsi(klines_primary, period=14)
             rsi_1h = calculate_rsi(klines_1h, period=14)
-            sma50 = calculate_sma(klines_15m, period=50)
+            sma50 = calculate_sma(klines_primary, period=50)
 
             ai_intel = await get_gemini_analysis(ticker_obj, rsi=rsi_15m, sma50=sma50)
             ai_confidence = float(ai_intel.get("confidenceScore", 75))

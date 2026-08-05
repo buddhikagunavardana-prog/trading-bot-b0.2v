@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoBot AI – Alpha Engine Terminal</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         :root {
             --bg-color: #0b0e14;
@@ -636,6 +637,28 @@
                         </div>
                     </div>
 
+                    <!-- Input 4: Master Timeframe -->
+                    <div style="background:var(--chip-bg); padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <label style="font-size:12px; font-weight:bold; color:#ab47bc; text-transform:uppercase; letter-spacing:0.5px;">
+                                ⏱️ Master Timeframe
+                            </label>
+                            <span style="font-size:10px; color:var(--text-muted);">Candle Interval</span>
+                        </div>
+                        <select id="master-timeframe-select" style="width:100%; background:#080b11; border:1px solid rgba(171, 71, 188, 0.5); color:#fff; padding:8px 12px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box; cursor:pointer;">
+                            <option value="1m">1m (1 Min Scalp)</option>
+                            <option value="5m">5m (5 Min Intra-day)</option>
+                            <option value="15m" selected>15m (15 Min Standard)</option>
+                            <option value="1h">1h (1 Hour Swing)</option>
+                            <option value="4h">4h (4 Hour Trend)</option>
+                            <option value="1D">1D (1 Day Macro)</option>
+                            <option value="5Y">5Y (5 Year Multi-Year)</option>
+                        </select>
+                        <div style="font-size:10px; color:var(--text-muted); margin-top:6px; line-height:1.3;">
+                            Primary timeframe for live data feeds, indicators, and backtests.
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Range Slider for Threshold -->
@@ -672,17 +695,20 @@
             </div>
 
         <!-- Strategy Testing & Simulation Suite Card -->
-        <div class="card" style="background: linear-gradient(135deg, rgba(16,20,32,0.98), rgba(11,14,24,0.95)); border: 1px solid rgba(100, 181, 246, 0.4); box-shadow: 0 4px 24px rgba(0,0,0,0.5);">
+        <div id="strategy-simulation-card" class="card sim-card-interactive" title="Double-click card to open Fullscreen Simulation Viewer" ondblclick="openFullscreenSimulationViewer()" style="background: linear-gradient(135deg, rgba(16,20,32,0.98), rgba(11,14,24,0.95)); border: 1px solid rgba(100, 181, 246, 0.4); box-shadow: 0 4px 24px rgba(0,0,0,0.5); cursor:pointer;">
             <div class="card-header" style="border-bottom: 1px dashed rgba(100, 181, 246, 0.25); padding-bottom: 10px;">
-                <div style="display:flex; align-items:center; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%;">
                     <h3 class="card-title" style="color:#64b5f6; font-size:16px; letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
                         🧪 Strategy Testing & Simulation Suite
                     </h3>
                     <span style="font-size:10px; background:rgba(100, 181, 246, 0.15); color:#64b5f6; padding:3px 8px; border-radius:12px; font-weight:bold; border:1px solid rgba(100, 181, 246, 0.3);">
                         MODULAR BACKTEST & FORWARD ENGINE
                     </span>
+                    <button type="button" onclick="event.stopPropagation(); openFullscreenSimulationViewer();" title="Click or Double-Click card for Fullscreen Viewer" style="background:rgba(0, 240, 144, 0.15); border:1px solid rgba(0, 240, 144, 0.4); color:#00f090; font-size:10px; font-weight:bold; padding:4px 12px; border-radius:12px; cursor:pointer; display:flex; align-items:center; gap:5px; margin-left:auto; font-family:inherit;">
+                        🖥️ FULLSCREEN VIEWER (DBL-CLICK)
+                    </button>
                 </div>
-                <span style="color:var(--text-muted); font-size:11px;">MULTI-PAIR HISTORICAL & LIVE SIMULATION</span>
+                <span style="color:var(--text-muted); font-size:11px;">MULTI-PAIR HISTORICAL & LIVE SIMULATION • DOUBLE-CLICK CARD FOR FULLSCREEN OVERLAY</span>
             </div>
 
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:14px; margin-bottom:16px;">
@@ -698,30 +724,58 @@
                     </select>
                 </div>
 
-                <!-- Input 2: Time Duration / Date Range -->
+                <!-- Input 2: Timeframe & Duration -->
                 <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
                     <label style="font-size:11px; font-weight:bold; color:#64b5f6; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">
-                        📅 Timeframe / Duration
+                        ⏱️ Timeframe & Duration
                     </label>
-                    <select id="sim-duration-preset" onchange="onBacktestPresetChange(this.value)" style="width:100%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px; border-radius:6px; font-size:13px; font-weight:bold; outline:none;">
-                        <option value="30" selected>Past 30 Days (1 Month)</option>
-                        <option value="90">Past 3 Months (90 Days)</option>
-                        <option value="180">Past 6 Months (180 Days)</option>
-                        <option value="365">Past 1 Year (365 Days)</option>
-                        <option value="CUSTOM">Custom Date Range...</option>
-                    </select>
+                    <div style="display:flex; gap:6px;">
+                        <select id="sim-timeframe-select" title="Bar Timeframe Interval" style="width:38%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px 4px; border-radius:6px; font-size:12px; font-weight:bold; outline:none; cursor:pointer;">
+                            <option value="1m">1m</option>
+                            <option value="5m">5m</option>
+                            <option value="15m" selected>15m</option>
+                            <option value="1h">1h</option>
+                            <option value="4h">4h</option>
+                            <option value="1D">1D</option>
+                            <option value="5Y">5Y</option>
+                        </select>
+                        <select id="sim-duration-preset" onchange="onBacktestPresetChange(this.value)" style="width:62%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px 6px; border-radius:6px; font-size:12px; font-weight:bold; outline:none; cursor:pointer;">
+                            <option value="30" selected>Past 30 Days</option>
+                            <option value="90">Past 3 Months</option>
+                            <option value="180">Past 6 Months</option>
+                            <option value="365">Past 1 Year</option>
+                            <option value="1825">Past 5 Years</option>
+                            <option value="CUSTOM">Custom Range...</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Input 3: Modular Strategy Selector -->
+                <!-- Input 3: Modular Strategy Selector & Version Manager -->
                 <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                    <label style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">
-                        ⚡ Modular Strategy Engine
-                    </label>
-                    <select id="sim-strategy-select" style="width:100%; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px; border-radius:6px; font-size:13px; font-weight:bold; outline:none;">
-                        <option value="alpha_engine" selected>Alpha Engine v2.4 (RSI + Order Flow + Gemini AI)</option>
-                        <option value="ema_crossover">EMA Crossover (9 / 21) + RSI Trend</option>
-                        <option value="mean_reversion">Mean Reversion (Bollinger + RSI Oversold)</option>
-                    </select>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); text-transform:uppercase; letter-spacing:0.5px;">
+                            ⚡ Strategy Engine & Version Manager
+                        </label>
+                        <span id="sim-strategy-type-badge" style="font-size:9px; font-weight:bold; padding:2px 6px; border-radius:3px; background:rgba(0,240,144,0.15); color:var(--accent-green-bright); border:1px solid rgba(0,240,144,0.3);">
+                            Base Immutable Template
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:6px;">
+                        <select id="sim-strategy-select" onchange="onStrategySelectChange(this.value)" style="flex:1; background:#080b11; border:1px solid var(--card-border); color:#fff; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; outline:none;">
+                            <option value="alpha_engine" selected>Alpha Engine v2.4 (RSI + Order Flow + Gemini AI)</option>
+                            <option value="ema_crossover">EMA Crossover (9 / 21) + RSI Trend</option>
+                            <option value="mean_reversion">Mean Reversion (Bollinger + RSI Oversold)</option>
+                        </select>
+                        <button onclick="promptCloneStrategy()" title="Clone & Save as new strategy version" style="background:rgba(0, 240, 144, 0.15); border:1px solid var(--accent-green-bright); color:var(--accent-green-bright); padding:6px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; white-space:nowrap;">
+                            🌱 Clone Version
+                        </button>
+                        <button id="sim-delete-strategy-btn" onclick="deleteCurrentStrategyVersion()" title="Delete cloned strategy version" style="display:none; background:rgba(255, 82, 82, 0.15); border:1px solid var(--accent-red); color:var(--accent-red); padding:6px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; white-space:nowrap;">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                    <div id="sim-strategy-desc" style="font-size:10px; color:var(--text-muted); line-height:1.3;">
+                        Institutional multi-gate pipeline scoring trend alignment, RSI momentum, and order flow.
+                    </div>
                 </div>
 
                 <!-- Input 4: Risk & Capital Parameters -->
@@ -836,6 +890,77 @@
                         <span class="metric-label" style="font-size:10px;">Sharpe Ratio</span><br>
                         <span style="font-size:18px; font-weight:bold; color:var(--accent-yellow);" id="sim-rep-sharpe">0.00</span>
                         <div style="font-size:10px; color:var(--text-muted);">Risk Adjusted</div>
+                    </div>
+                </div>
+
+                <!-- Gemini AI Deep Strategy Analysis & Optimization Card -->
+                <div id="sim-ai-card" style="background: linear-gradient(135deg, rgba(16, 26, 44, 0.95), rgba(11, 18, 32, 0.98)); border:1px solid rgba(100, 181, 246, 0.4); border-radius:10px; padding:14px; margin-bottom:14px; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px; flex-wrap:wrap; gap:8px;">
+                        <span style="font-size:13px; font-weight:bold; color:#64b5f6; display:flex; align-items:center; gap:8px;">
+                            🤖 Gemini AI Strategy Analysis & Optimization Engine
+                        </span>
+                        <span style="font-size:10px; background:rgba(100, 181, 246, 0.15); color:#64b5f6; padding:3px 8px; border-radius:4px; border:1px solid rgba(100, 181, 246, 0.3); font-weight:bold;">
+                            LIVE GEMINI 2.5 FLASH AUDIT
+                        </span>
+                    </div>
+
+                    <!-- Executive Headline -->
+                    <div style="background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px; border-left:4px solid #64b5f6; margin-bottom:12px; font-size:12px; color:#e0e6ed; line-height:1.5;" id="sim-ai-headline">
+                        Analyzing simulation history...
+                    </div>
+
+                    <!-- Parameter Optimization Tweaks -->
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,183,77,0.3); border-radius:8px; padding:12px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                            <span style="font-size:11px; font-weight:bold; color:#ffb74d;">🎯 Gemini AI Optimal Parameter Tweaks</span>
+                            <div style="display:flex; gap:6px;">
+                                <button id="sim-ai-apply-btn" onclick="applyAIOptimalParameters()" style="background:linear-gradient(135deg, #ffb74d, #f57c00); border:none; color:#000; font-size:10px; font-weight:bold; padding:5px 10px; border-radius:4px; cursor:pointer; box-shadow:0 2px 8px rgba(255,183,77,0.3);">
+                                    ⚡ Apply Tweaks
+                                </button>
+                                <button onclick="promptCloneFromGemini()" style="background:linear-gradient(135deg, #64b5f6, #1e88e5); border:none; color:#fff; font-size:10px; font-weight:bold; padding:5px 10px; border-radius:4px; cursor:pointer; box-shadow:0 2px 8px rgba(100,181,246,0.3);">
+                                    🌱 Save as Strategy Version
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:8px;">
+                            <div style="background:#080b11; padding:8px; border-radius:6px; text-align:center; border:1px solid rgba(255,255,255,0.08);">
+                                <span style="font-size:10px; color:var(--text-muted); display:block;">Threshold</span>
+                                <span style="font-size:15px; font-weight:bold; color:#ffb74d;" id="sim-ai-opt-thresh">75.0</span>
+                            </div>
+                            <div style="background:#080b11; padding:8px; border-radius:6px; text-align:center; border:1px solid rgba(255,255,255,0.08);">
+                                <span style="font-size:10px; color:var(--text-muted); display:block;">Stop Loss</span>
+                                <span style="font-size:15px; font-weight:bold; color:var(--accent-red);" id="sim-ai-opt-sl">1.8%</span>
+                            </div>
+                            <div style="background:#080b11; padding:8px; border-radius:6px; text-align:center; border:1px solid rgba(255,255,255,0.08);">
+                                <span style="font-size:10px; color:var(--text-muted); display:block;">Take Profit</span>
+                                <span style="font-size:15px; font-weight:bold; color:var(--accent-green-bright);" id="sim-ai-opt-tp">4.5%</span>
+                            </div>
+                        </div>
+                        <div style="font-size:11px; color:#b0bec5; line-height:1.4;" id="sim-ai-opt-reasoning">
+                            Optimization reasoning loading...
+                        </div>
+                    </div>
+
+                    <!-- Actionable Strategy Improvements & Pattern Insights Row -->
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+                        <!-- Actionable Improvements -->
+                        <div style="background:rgba(0,0,0,0.25); padding:10px 12px; border-radius:8px; border:1px solid rgba(0,240,144,0.2);">
+                            <div style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); margin-bottom:6px;">
+                                💡 Actionable Improvement Suggestions
+                            </div>
+                            <ul id="sim-ai-improvements-list" style="margin:0; padding-left:16px; font-size:11px; color:#e0e6ed; line-height:1.5;">
+                                <li>Loading suggestions...</li>
+                            </ul>
+                        </div>
+                        <!-- Pattern & Regime Insights -->
+                        <div style="background:rgba(0,0,0,0.25); padding:10px 12px; border-radius:8px; border:1px solid rgba(100,181,246,0.2);">
+                            <div style="font-size:11px; font-weight:bold; color:#64b5f6; margin-bottom:6px;">
+                                🔍 Pattern & Market Regime Insights
+                            </div>
+                            <div id="sim-ai-pattern-insights" style="font-size:11px; color:#e0e6ed; line-height:1.5;">
+                                Loading pattern insights...
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2373,6 +2498,12 @@
             if (levInput && document.activeElement !== levInput) {
                 levInput.value = ms.leverage !== undefined ? ms.leverage : 10;
             }
+            if (ms.timeframe) {
+                const tfSelect = document.getElementById('master-timeframe-select');
+                if (tfSelect && document.activeElement !== tfSelect) tfSelect.value = ms.timeframe;
+                const simTfSelect = document.getElementById('sim-timeframe-select');
+                if (simTfSelect && document.activeElement !== simTfSelect) simTfSelect.value = ms.timeframe;
+            }
             if (ms.score_threshold !== undefined) {
                 onThresholdSlide(ms.score_threshold);
             }
@@ -2381,11 +2512,13 @@
         async function saveMasterSettings() {
             const posInput = document.getElementById('master-position-size-input');
             const levInput = document.getElementById('master-leverage-input');
+            const tfSelect = document.getElementById('master-timeframe-select');
             const threshInput = document.getElementById('threshold-num-input');
             const threshSlider = document.getElementById('threshold-slider');
 
             const posSize = posInput ? (parseFloat(posInput.value) || 300.0) : 300.0;
             const lev = levInput ? (parseInt(levInput.value) || 10) : 10;
+            const tf = tfSelect ? tfSelect.value : '15m';
             const thresh = threshInput ? parseFloat(threshInput.value) : (threshSlider ? parseFloat(threshSlider.value) : 70.0);
 
             const btn = document.getElementById('btn-save-master-settings');
@@ -2400,7 +2533,8 @@
                     body: JSON.stringify({
                         position_size: posSize,
                         leverage: lev,
-                        score_threshold: thresh
+                        score_threshold: thresh,
+                        timeframe: tf
                     })
                 });
                 const data = await res.json();
@@ -2414,7 +2548,7 @@
                         toast.style.background = 'rgba(0, 240, 144, 0.15)';
                         toast.style.border = '1px solid rgba(0, 240, 144, 0.4)';
                         toast.style.color = 'var(--accent-green-bright)';
-                        toast.innerText = `✅ Master Settings Persisted! Margin: $${ms.position_size} USDT | Leverage: ${ms.leverage}x | Threshold: ${ms.score_threshold}`;
+                        toast.innerText = `✅ Master Settings Persisted! Margin: $${ms.position_size} USDT | Leverage: ${ms.leverage}x | Threshold: ${ms.score_threshold} | Timeframe: ${ms.timeframe}`;
                         setTimeout(() => { toast.style.display = 'none'; }, 4000);
                     }
                 } else {
@@ -2832,20 +2966,148 @@
         }
 
         // Strategy Testing & Simulation Suite JS
-        async function loadBacktestStrategies() {
+        window._loadedStrategies = [];
+
+        async function loadBacktestStrategies(selectedIdToKeep = null) {
             try {
                 const res = await fetch('/api/backtest/strategies');
                 const data = await res.json();
                 if (data.status === 'success' && data.strategies) {
+                    window._loadedStrategies = data.strategies;
                     const sel = document.getElementById('sim-strategy-select');
                     if (sel) {
-                        sel.innerHTML = data.strategies.map(s => `
-                            <option value="${s.id}">${s.name}</option>
-                        `).join('');
+                        const currentVal = selectedIdToKeep || sel.value || 'alpha_engine';
+                        sel.innerHTML = data.strategies.map(s => {
+                            const tag = s.is_immutable ? '🔒 Base Template' : '🌱 Cloned Version';
+                            return `<option value="${s.id}" ${s.id === currentVal ? 'selected' : ''}>${s.name} (${tag})</option>`;
+                        }).join('');
+                        onStrategySelectChange(sel.value);
                     }
                 }
             } catch(e) {
                 console.error('Failed to load backtest strategies:', e);
+            }
+        }
+
+        function onStrategySelectChange(stratId) {
+            if (!window._loadedStrategies) return;
+            const strat = window._loadedStrategies.find(s => s.id === stratId || s.strategy_id === stratId);
+            if (!strat) return;
+
+            const descElem = document.getElementById('sim-strategy-desc');
+            if (descElem) descElem.innerText = strat.description || '';
+
+            const badgeElem = document.getElementById('sim-strategy-type-badge');
+            if (badgeElem) {
+                if (strat.is_immutable) {
+                    badgeElem.innerText = '🔒 Base Immutable Template';
+                    badgeElem.style.background = 'rgba(0,240,144,0.15)';
+                    badgeElem.style.borderColor = 'rgba(0,240,144,0.3)';
+                    badgeElem.style.color = 'var(--accent-green-bright)';
+                } else {
+                    badgeElem.innerText = '🌱 Saved Cloned Version';
+                    badgeElem.style.background = 'rgba(100,181,246,0.15)';
+                    badgeElem.style.borderColor = 'rgba(100,181,246,0.3)';
+                    badgeElem.style.color = '#64b5f6';
+                }
+            }
+
+            const delBtn = document.getElementById('sim-delete-strategy-btn');
+            if (delBtn) {
+                delBtn.style.display = strat.is_immutable ? 'none' : 'inline-block';
+            }
+
+            if (strat.parameters) {
+                if (strat.parameters.score_threshold !== undefined) {
+                    const threshElem = document.getElementById('sim-threshold-input');
+                    if (threshElem) threshElem.value = strat.parameters.score_threshold;
+                }
+                if (strat.parameters.stop_loss_pct !== undefined) {
+                    const slElem = document.getElementById('sim-sl-input');
+                    if (slElem) slElem.value = strat.parameters.stop_loss_pct;
+                }
+                if (strat.parameters.take_profit_pct !== undefined) {
+                    const tpElem = document.getElementById('sim-tp-input');
+                    if (tpElem) tpElem.value = strat.parameters.take_profit_pct;
+                }
+            }
+        }
+
+        async function promptCloneStrategy() {
+            const baseId = document.getElementById('sim-strategy-select').value || 'alpha_engine';
+            const defaultName = `Alpha_Engine_v2.5_Custom_${Math.floor(Math.random()*1000)}`;
+            const versionName = prompt('Enter a name for your new Cloned Strategy Version:', defaultName);
+            if (!versionName || !versionName.trim()) return;
+
+            const thresh = parseFloat(document.getElementById('sim-threshold-input').value) || 70.0;
+            const sl = parseFloat(document.getElementById('sim-sl-input').value) || 2.0;
+            const tp = parseFloat(document.getElementById('sim-tp-input').value) || 4.0;
+            const desc = prompt('Enter a description for this strategy version:', `Cloned version with Threshold=${thresh}, SL=${sl}%, TP=${tp}%`);
+
+            await createStrategyClone(baseId, versionName.trim(), thresh, sl, tp, desc);
+        }
+
+        async function promptCloneFromGemini() {
+            if (!window._lastAIOptimalParams) {
+                alert('Run a backtest simulation to generate Gemini AI parameter suggestions first.');
+                return;
+            }
+            const opt = window._lastAIOptimalParams;
+            const baseId = document.getElementById('sim-strategy-select').value || 'alpha_engine';
+            const defaultName = `Alpha_Engine_v2.5_Gemini_Optimized`;
+            const versionName = prompt('Enter name for Gemini AI Optimized strategy clone:', defaultName);
+            if (!versionName || !versionName.trim()) return;
+
+            const thresh = opt.score_threshold || 75.0;
+            const sl = opt.stop_loss_pct || 1.8;
+            const tp = opt.take_profit_pct || 4.5;
+            const desc = opt.reasoning || `Gemini AI optimized clone: Threshold ${thresh}, SL ${sl}%, TP ${tp}%`;
+
+            await createStrategyClone(baseId, versionName.trim(), thresh, sl, tp, desc);
+        }
+
+        async function createStrategyClone(baseId, versionName, scoreThresh, slPct, tpPct, description) {
+            try {
+                const response = await fetch('/api/strategies/clone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        base_strategy_id: baseId,
+                        version_name: versionName,
+                        score_threshold: scoreThresh,
+                        stop_loss_pct: slPct,
+                        take_profit_pct: tpPct,
+                        description: description
+                    })
+                });
+                const data = await response.json();
+                if (data.status === 'success' && data.strategy) {
+                    alert(`✅ Strategy version created successfully:\n"${data.strategy.display_name}" (${data.strategy.id})`);
+                    await loadBacktestStrategies(data.strategy.id);
+                } else {
+                    alert('Error creating strategy clone: ' + (data.message || data.detail || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Failed to connect to strategy cloning backend: ' + e.message);
+            }
+        }
+
+        async function deleteCurrentStrategyVersion() {
+            const selId = document.getElementById('sim-strategy-select').value;
+            if (!selId) return;
+            if (!confirm(`Are you sure you want to delete strategy version '${selId}'?`)) return;
+
+            try {
+                const response = await fetch(`/api/strategies/${selId}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert(`Deleted strategy version '${selId}'`);
+                    await loadBacktestStrategies('alpha_engine');
+                } else {
+                    alert('Cannot delete: ' + (data.message || data.detail));
+                }
+            } catch(e) {
+                alert('Failed to delete strategy version: ' + e.message);
             }
         }
 
@@ -2862,6 +3124,30 @@
             }
         }
 
+        function applyAIOptimalParameters() {
+            if (!window._lastAIOptimalParams) {
+                alert('No AI parameter suggestions available to apply.');
+                return;
+            }
+            const opt = window._lastAIOptimalParams;
+            if (opt.score_threshold !== undefined) {
+                const threshElem = document.getElementById('sim-threshold-input');
+                if (threshElem) threshElem.value = opt.score_threshold;
+            }
+            if (opt.stop_loss_pct !== undefined) {
+                const slElem = document.getElementById('sim-sl-input');
+                if (slElem) slElem.value = opt.stop_loss_pct;
+            }
+            if (opt.take_profit_pct !== undefined) {
+                const tpElem = document.getElementById('sim-tp-input');
+                if (tpElem) tpElem.value = opt.take_profit_pct;
+            }
+            const toggleElem = document.getElementById('sim-use-custom-toggle');
+            if (toggleElem) toggleElem.checked = true;
+
+            alert(`Applied Gemini AI Optimal Parameters:\n• Scoring Threshold: ${opt.score_threshold}\n• Stop Loss: ${opt.stop_loss_pct}%\n• Take Profit: ${opt.take_profit_pct}%`);
+        }
+
         async function runBacktestSimulation() {
             const btn = document.getElementById('btn-run-simulation');
             if (btn) {
@@ -2871,6 +3157,9 @@
 
             const testMode = document.getElementById('sim-test-mode').value;
             const presetVal = document.getElementById('sim-duration-preset').value;
+            const simTfSelect = document.getElementById('sim-timeframe-select');
+            const masterTfSelect = document.getElementById('master-timeframe-select');
+            const timeframeVal = simTfSelect ? simTfSelect.value : (masterTfSelect ? masterTfSelect.value : '15m');
             const strategyId = document.getElementById('sim-strategy-select').value;
             const capital = parseFloat(document.getElementById('sim-capital-input').value) || 10000.0;
             const size = parseFloat(document.getElementById('sim-size-input').value) || 300.0;
@@ -2904,6 +3193,7 @@
                         duration_days: durationDays,
                         start_date: startDate,
                         end_date: endDate,
+                        timeframe: timeframeVal,
                         strategy_id: strategyId,
                         initial_capital: capital,
                         position_size: size,
@@ -2938,7 +3228,7 @@
             card.style.display = 'block';
 
             const sum = report.summary || {};
-            document.getElementById('sim-executed-at').innerText = 'Ran ' + (sum.executed_at || 'UTC') + ' | Mode: ' + sum.test_mode;
+            document.getElementById('sim-executed-at').innerText = 'Ran ' + (sum.executed_at || 'UTC') + ' | Mode: ' + sum.test_mode + ' | TF: ' + (sum.timeframe || '15m');
 
             document.getElementById('sim-rep-trades').innerText = sum.total_trades || 0;
             document.getElementById('sim-rep-trades-split').innerText = 'W: ' + (sum.total_wins || 0) + ' | L: ' + (sum.total_losses || 0);
@@ -2964,6 +3254,44 @@
             document.getElementById('sim-rep-dd-pct').innerText = (sum.max_drawdown_pct || 0.0).toFixed(1) + '% Max Drawdown';
 
             document.getElementById('sim-rep-sharpe').innerText = (sum.sharpe_ratio || 0.0).toFixed(2);
+
+            // Populate Gemini AI Recommendations
+            const aiRec = report.ai_recommendations || {};
+            const headlineElem = document.getElementById('sim-ai-headline');
+            if (headlineElem) {
+                headlineElem.innerText = aiRec.summary_headline || 'AI Audit Complete.';
+            }
+
+            if (aiRec.optimal_parameters) {
+                const opt = aiRec.optimal_parameters;
+                window._lastAIOptimalParams = opt;
+
+                const threshElem = document.getElementById('sim-ai-opt-thresh');
+                if (threshElem) threshElem.innerText = (opt.score_threshold || 70.0).toFixed(1);
+
+                const slElem = document.getElementById('sim-ai-opt-sl');
+                if (slElem) slElem.innerText = (opt.stop_loss_pct || 2.0).toFixed(1) + '%';
+
+                const tpElem = document.getElementById('sim-ai-opt-tp');
+                if (tpElem) tpElem.innerText = (opt.take_profit_pct || 4.0).toFixed(1) + '%';
+
+                const reasoningElem = document.getElementById('sim-ai-opt-reasoning');
+                if (reasoningElem) reasoningElem.innerText = opt.reasoning || '';
+            }
+
+            if (aiRec.actionable_improvements && Array.isArray(aiRec.actionable_improvements)) {
+                const ulElem = document.getElementById('sim-ai-improvements-list');
+                if (ulElem) {
+                    ulElem.innerHTML = aiRec.actionable_improvements.map(item => `<li>${item}</li>`).join('');
+                }
+            }
+
+            if (aiRec.pattern_insights) {
+                const insightElem = document.getElementById('sim-ai-pattern-insights');
+                if (insightElem) {
+                    insightElem.innerText = aiRec.pattern_insights;
+                }
+            }
 
             // Chart legend
             const legElem = document.getElementById('sim-chart-legend');
@@ -3161,9 +3489,518 @@
             container.appendChild(simCard);
         }
 
+<!-- Fullscreen Simulation Viewer Modal -->
+<div id="fullscreen-simulation-modal" class="fullscreen-modal-overlay">
+    <!-- Header -->
+    <div class="fullscreen-modal-header">
+        <div>
+            <div class="fullscreen-modal-title">
+                ⚡ FULLSCREEN SIMULATION ENGINE & REAL-TIME ANALYTICS 🧪
+            </div>
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">
+                DOUBLE-CLICK OVERLAY VIEW • LIVE STREAMING WEBSOCKET & OKX CANDLE ENGINE
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px;">
+            <div id="fs-sim-ws-status" style="font-size:12px; font-weight:bold; background:rgba(0,240,144,0.1); border:1px solid rgba(0,240,144,0.3); padding:6px 12px; border-radius:20px; color:#00f090; display:flex; align-items:center; gap:8px;">
+                <span class="pulse-dot-green"></span> WS CONNECTED
+            </div>
+            <button type="button" class="sim-close-btn" onclick="closeFullscreenSimulationViewer()">
+                Close Viewer (×)
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Action Controls Toolbar -->
+    <div style="background:var(--fs-card-bg); border:1px solid var(--fs-card-border); border-radius:8px; padding:16px; margin-bottom:20px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; align-items:end;">
+        <div>
+            <label style="font-size:10px; font-weight:bold; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">🎯 Mode</label>
+            <select id="fs-sim-mode" style="width:100%; background:#020408; border:1px solid rgba(0,240,144,0.3); color:#fff; padding:6px 8px; border-radius:4px; font-size:12px; font-family:inherit;">
+                <option value="BACKTEST" selected>Backtest (Hist)</option>
+                <option value="FORWARD_TEST">Forward (Live)</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:10px; font-weight:bold; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">⏱️ Timeframe</label>
+            <select id="fs-sim-timeframe" style="width:100%; background:#020408; border:1px solid rgba(0,240,144,0.3); color:#fff; padding:6px 8px; border-radius:4px; font-size:12px; font-family:inherit;">
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m" selected>15m</option>
+                <option value="1h">1h</option>
+                <option value="4h">4h</option>
+                <option value="1D">1D</option>
+                <option value="5Y">5Y</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:10px; font-weight:bold; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">📅 Duration</label>
+            <select id="fs-sim-duration" style="width:100%; background:#020408; border:1px solid rgba(0,240,144,0.3); color:#fff; padding:6px 8px; border-radius:4px; font-size:12px; font-family:inherit;">
+                <option value="30" selected>30 Days</option>
+                <option value="90">90 Days</option>
+                <option value="180">180 Days</option>
+                <option value="365">1 Year</option>
+                <option value="1825">5 Years</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:10px; font-weight:bold; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">💰 Capital ($)</label>
+            <input type="number" id="fs-sim-capital" value="10000" style="width:100%; background:#020408; border:1px solid rgba(0,240,144,0.3); color:#fff; padding:6px 8px; border-radius:4px; font-size:12px; font-family:inherit;" />
+        </div>
+        <div>
+            <label style="font-size:10px; font-weight:bold; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">⚡ Leverage</label>
+            <input type="number" id="fs-sim-leverage" value="10" style="width:100%; background:#020408; border:1px solid rgba(0,240,144,0.3); color:#fff; padding:6px 8px; border-radius:4px; font-size:12px; font-family:inherit;" />
+        </div>
+        <div>
+            <label style="font-size:10px; font-weight:bold; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">⚙️ Strategy</label>
+            <select id="fs-sim-strategy" style="width:100%; background:#020408; border:1px solid rgba(0,240,144,0.3); color:#fff; padding:6px 8px; border-radius:4px; font-size:12px; font-family:inherit;">
+                <option value="alpha_engine" selected>Alpha Engine Default</option>
+            </select>
+        </div>
+        <div>
+            <button type="button" id="btn-fs-run-sim" onclick="runFullscreenSimulation()" style="width:100%; background:linear-gradient(135deg, #00f090, #00b36b); border:none; color:#020408; font-weight:900; font-size:12px; padding:8px 12px; border-radius:4px; cursor:pointer; font-family:inherit; text-transform:uppercase; box-shadow:0 0 12px rgba(0,240,144,0.4);">
+                🚀 Run Simulation
+            </button>
+        </div>
+    </div>
+
+    <!-- Fullscreen KPI Grid -->
+    <div class="fullscreen-kpi-grid">
+        <div class="fullscreen-kpi-card">
+            <div class="fullscreen-kpi-label">📊 Executed Trades</div>
+            <div id="fs-kpi-trades" class="fullscreen-kpi-value">0</div>
+            <div id="fs-kpi-trades-split" style="font-size:11px; color:var(--text-dim); margin-top:4px;">W: 0 | L: 0</div>
+        </div>
+        <div class="fullscreen-kpi-card">
+            <div class="fullscreen-kpi-label">🎯 Win Rate</div>
+            <div id="fs-kpi-winrate" class="fullscreen-kpi-value neon">0.0%</div>
+            <div id="fs-kpi-winrate-status" style="font-size:11px; color:#00f090; margin-top:4px;">READY</div>
+        </div>
+        <div class="fullscreen-kpi-card">
+            <div class="fullscreen-kpi-label">💵 Net PnL (USDT)</div>
+            <div id="fs-kpi-pnl" class="fullscreen-kpi-value">$0.00</div>
+            <div id="fs-kpi-roi" style="font-size:11px; color:var(--text-dim); margin-top:4px;">0.00% ROI</div>
+        </div>
+        <div class="fullscreen-kpi-card">
+            <div class="fullscreen-kpi-label">📈 Profit Factor</div>
+            <div id="fs-kpi-pf" class="fullscreen-kpi-value">1.00</div>
+            <div id="fs-kpi-sharpe" style="font-size:11px; color:var(--text-dim); margin-top:4px;">Sharpe: 0.00</div>
+        </div>
+        <div class="fullscreen-kpi-card">
+            <div class="fullscreen-kpi-label">⚠️ Max Drawdown</div>
+            <div id="fs-kpi-dd" class="fullscreen-kpi-value" style="color:#ff3366;">0.00%</div>
+            <div id="fs-kpi-tf" style="font-size:11px; color:var(--text-dim); margin-top:4px;">Timeframe: 15m</div>
+        </div>
+    </div>
+
+    <!-- Main Analytics Section (2 Columns: Chart & Terminal Logs) -->
+    <div style="display:grid; grid-template-columns: 3fr 2fr; gap:20px; margin-bottom:20px;">
+        <!-- Left: Interactive Canvas Chart -->
+        <div style="background:var(--fs-card-bg); border:1px solid var(--fs-card-border); border-radius:8px; padding:16px; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-weight:bold; font-size:14px; color:#ffffff; display:flex; align-items:center; gap:8px;">
+                    📈 Equity Curve & Performance Trajectory
+                </div>
+                <div id="fs-chart-legend" style="font-size:11px; color:var(--neon-green); font-weight:bold;">
+                    Initial: $10,000
+                </div>
+            </div>
+            <div style="flex:1; min-height:260px; position:relative;">
+                <canvas id="fs-sim-equity-canvas" style="width:100%; height:100%; display:block;"></canvas>
+            </div>
+        </div>
+
+        <!-- Right: Real-time Terminal Log Stream -->
+        <div style="background:var(--fs-card-bg); border:1px solid var(--fs-card-border); border-radius:8px; padding:16px; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-weight:bold; font-size:14px; color:#ffffff; display:flex; align-items:center; gap:8px;">
+                    💻 Real-Time Simulation Terminal Logs
+                </div>
+                <button type="button" onclick="clearFullscreenLogs()" style="background:none; border:1px solid var(--text-dim); color:var(--text-dim); font-size:10px; padding:2px 6px; border-radius:3px; cursor:pointer;">
+                    Clear
+                </button>
+            </div>
+            <div id="fs-sim-terminal-logs" class="fullscreen-terminal">
+                <div>[SYSTEM] Fullscreen Simulation Viewer Initialized. Listening to WebSocket stream...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Optimization Advice Banner -->
+    <div id="fs-ai-advice-banner" style="display:none; background:rgba(0,240,144,0.05); border:1px solid rgba(0,240,144,0.3); border-radius:8px; padding:14px; margin-bottom:20px;">
+        <div style="font-size:12px; font-weight:bold; color:var(--neon-green); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            🤖 Gemini AI Optimization Insights & Recommendations
+        </div>
+        <div id="fs-ai-advice-text" style="font-size:12px; color:#d1d4dc; line-height:1.5;"></div>
+    </div>
+
+    <!-- Executed Trades Breakdown Table -->
+    <div style="background:var(--fs-card-bg); border:1px solid var(--fs-card-border); border-radius:8px; padding:16px;">
+        <div style="font-weight:bold; font-size:14px; color:#ffffff; margin-bottom:12px;">
+            📋 Executed Trade History & Risk Audit
+        </div>
+        <div style="max-height:250px; overflow-y:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--text-dim);">
+                        <th style="padding:8px;">Trade #</th>
+                        <th style="padding:8px;">Symbol</th>
+                        <th style="padding:8px;">Side</th>
+                        <th style="padding:8px;">Entry Price</th>
+                        <th style="padding:8px;">Exit Price</th>
+                        <th style="padding:8px;">PnL ($)</th>
+                        <th style="padding:8px;">ROI (%)</th>
+                        <th style="padding:8px;">Exit Reason</th>
+                    </tr>
+                </thead>
+                <tbody id="fs-sim-trades-table-body">
+                    <tr>
+                        <td colspan="8" style="padding:16px; text-align:center; color:var(--text-dim);">No simulation trade data loaded yet. Run a simulation above to inspect trades.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+    <script>
+        // ==========================================
+        // Fullscreen Simulation Viewer Logic & WebSocket
+        // ==========================================
+        let fsSimulationWs = null;
+        let fsSimulationPollInterval = null;
+
+        function openFullscreenSimulationViewer() {
+            const modal = document.getElementById('fullscreen-simulation-modal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            const mainMode = document.getElementById('sim-test-mode');
+            const mainTf = document.getElementById('sim-timeframe-select');
+            const mainDur = document.getElementById('sim-duration-preset');
+            const mainCap = document.getElementById('sim-capital-input');
+            const mainLev = document.getElementById('sim-leverage-input');
+            const mainStrat = document.getElementById('sim-strategy-select');
+
+            if (mainMode) document.getElementById('fs-sim-mode').value = mainMode.value;
+            if (mainTf) document.getElementById('fs-sim-timeframe').value = mainTf.value;
+            if (mainDur) document.getElementById('fs-sim-duration').value = mainDur.value;
+            if (mainCap) document.getElementById('fs-sim-capital').value = mainCap.value;
+            if (mainLev) document.getElementById('fs-sim-leverage').value = mainLev.value;
+
+            const fsStratSelect = document.getElementById('fs-sim-strategy');
+            if (fsStratSelect && window._loadedStrategies && window._loadedStrategies.length > 0) {
+                fsStratSelect.innerHTML = window._loadedStrategies.map(s => 
+                    `<option value="${s.id}">${s.name} (${s.id})</option>`
+                ).join('');
+                if (mainStrat) fsStratSelect.value = mainStrat.value;
+            }
+
+            connectFullscreenSimulationWs();
+            fetchFullscreenSimulationState();
+        }
+
+        function closeFullscreenSimulationViewer() {
+            const modal = document.getElementById('fullscreen-simulation-modal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+
+            if (fsSimulationWs) {
+                try { fsSimulationWs.close(); } catch(e) {}
+                fsSimulationWs = null;
+            }
+            if (fsSimulationPollInterval) {
+                clearInterval(fsSimulationPollInterval);
+                fsSimulationPollInterval = null;
+            }
+        }
+
+        function updateFsWsStatusBadge(isConnected) {
+            const badge = document.getElementById('fs-sim-ws-status');
+            if (!badge) return;
+            if (isConnected) {
+                badge.innerHTML = `<span class="pulse-dot-green"></span> WS LIVE STREAM`;
+                badge.style.color = '#00f090';
+                badge.style.borderColor = 'rgba(0, 240, 144, 0.4)';
+            } else {
+                badge.innerHTML = `<span>●</span> REST POLL SYNC`;
+                badge.style.color = '#f2a900';
+                badge.style.borderColor = 'rgba(242, 169, 0, 0.4)';
+            }
+        }
+
+        function appendFsTerminalLog(msg) {
+            const box = document.getElementById('fs-sim-terminal-logs');
+            if (!box) return;
+            const line = document.createElement('div');
+            line.style.marginBottom = '4px';
+            line.innerText = typeof msg === 'string' ? msg : JSON.stringify(msg);
+            box.appendChild(line);
+
+            while (box.children.length > 100) {
+                box.removeChild(box.firstChild);
+            }
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function clearFullscreenLogs() {
+            const box = document.getElementById('fs-sim-terminal-logs');
+            if (box) box.innerHTML = '<div>[SYSTEM] Terminal logs cleared. Waiting for events...</div>';
+        }
+
+        function connectFullscreenSimulationWs() {
+            if (fsSimulationWs) return;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/simulation/ws`;
+
+            try {
+                fsSimulationWs = new WebSocket(wsUrl);
+                fsSimulationWs.onopen = () => {
+                    updateFsWsStatusBadge(true);
+                    appendFsTerminalLog(`[${new Date().toLocaleTimeString()}] Dedicated Simulation WebSocket Connected.`);
+                };
+                fsSimulationWs.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'simulation_state') {
+                            if (data.latest_report && data.latest_report.summary) {
+                                renderFullscreenReport(data.latest_report);
+                            }
+                            if (data.recent_logs && data.recent_logs.length > 0) {
+                                data.recent_logs.forEach(log => appendFsTerminalLog(log));
+                            }
+                        }
+                    } catch(e) {}
+                };
+                fsSimulationWs.onerror = () => {
+                    updateFsWsStatusBadge(false);
+                };
+                fsSimulationWs.onclose = () => {
+                    updateFsWsStatusBadge(false);
+                    fsSimulationWs = null;
+                };
+            } catch(e) {
+                updateFsWsStatusBadge(false);
+            }
+
+            if (!fsSimulationPollInterval) {
+                fsSimulationPollInterval = setInterval(fetchFullscreenSimulationState, 2000);
+            }
+        }
+
+        async function fetchFullscreenSimulationState() {
+            try {
+                const res = await fetch('/api/simulation/state');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.latest_report && data.latest_report.summary) {
+                        renderFullscreenReport(data.latest_report);
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function runFullscreenSimulation() {
+            const btn = document.getElementById('btn-fs-run-sim');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = '⏳ SIMULATING...';
+            }
+
+            const payload = {
+                test_mode: document.getElementById('fs-sim-mode').value,
+                timeframe: document.getElementById('fs-sim-timeframe').value,
+                duration_days: parseInt(document.getElementById('fs-sim-duration').value || '30'),
+                initial_capital: parseFloat(document.getElementById('fs-sim-capital').value || '10000'),
+                leverage: parseInt(document.getElementById('fs-sim-leverage').value || '10'),
+                strategy_id: document.getElementById('fs-sim-strategy').value
+            };
+
+            appendFsTerminalLog(`[${new Date().toLocaleTimeString()}] 🚀 Launching ${payload.test_mode} simulation on ${payload.timeframe} timeframe...`);
+
+            try {
+                const res = await fetch('/api/run-backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status === 'success' && data.report) {
+                    appendFsTerminalLog(`[${new Date().toLocaleTimeString()}] ✅ Simulation complete! Net PnL: $${data.report.summary.net_pnl} (${data.report.summary.cumulative_roi}% ROI)`);
+                    renderFullscreenReport(data.report);
+                    if (typeof renderBacktestReport === 'function') {
+                        renderBacktestReport(data.report);
+                    }
+                } else {
+                    appendFsTerminalLog(`[ERROR] Simulation failed: ${data.message || data.detail || 'Unknown error'}`);
+                }
+            } catch(e) {
+                appendFsTerminalLog(`[ERROR] Exception executing simulation: ${e.message}`);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = '🚀 RUN SIMULATION';
+                }
+            }
+        }
+
+        function renderFullscreenReport(report) {
+            if (!report || !report.summary) return;
+            const s = report.summary;
+
+            const elTrades = document.getElementById('fs-kpi-trades');
+            const elSplit = document.getElementById('fs-kpi-trades-split');
+            const elWinrate = document.getElementById('fs-kpi-winrate');
+            const elStatus = document.getElementById('fs-kpi-winrate-status');
+            const elPnl = document.getElementById('fs-kpi-pnl');
+            const elRoi = document.getElementById('fs-kpi-roi');
+            const elPf = document.getElementById('fs-kpi-pf');
+            const elSharpe = document.getElementById('fs-kpi-sharpe');
+            const elDd = document.getElementById('fs-kpi-dd');
+            const elTf = document.getElementById('fs-kpi-tf');
+
+            if (elTrades) elTrades.innerText = s.total_trades || 0;
+            if (elSplit) elSplit.innerText = `W: ${s.winning_trades || 0} | L: ${s.losing_trades || 0}`;
+            if (elWinrate) elWinrate.innerText = `${s.win_rate || 0}%`;
+            if (elStatus) elStatus.innerText = (s.win_rate >= 55) ? '🔥 HIGH ACCURACY' : '⚠️ MODERATE ACCURACY';
+
+            const netPnl = parseFloat(s.net_pnl || 0);
+            if (elPnl) {
+                elPnl.innerText = `$${netPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                elPnl.style.color = netPnl >= 0 ? '#00f090' : '#ff3366';
+            }
+            if (elRoi) elRoi.innerText = `${s.cumulative_roi || 0}% ROI`;
+            if (elPf) elPf.innerText = s.profit_factor || '1.00';
+            if (elSharpe) elSharpe.innerText = `Sharpe: ${s.sharpe_ratio || '0.00'}`;
+            if (elDd) elDd.innerText = `${s.max_drawdown_pct || 0}%`;
+            if (elTf) elTf.innerText = `Mode: ${s.test_mode || 'BACKTEST'}`;
+
+            if (report.equity_curve && report.equity_curve.length > 0) {
+                drawEquityCurveChartOnCanvas('fs-sim-equity-canvas', report.equity_curve);
+                const legend = document.getElementById('fs-chart-legend');
+                if (legend) {
+                    const startE = report.equity_curve[0].equity;
+                    const peakE = Math.max(...report.equity_curve.map(c => c.equity));
+                    legend.innerText = `Start: $${startE.toLocaleString()} → Peak: $${peakE.toLocaleString()}`;
+                }
+            }
+
+            const aiBanner = document.getElementById('fs-ai-advice-banner');
+            const aiText = document.getElementById('fs-ai-advice-text');
+            if (aiBanner && aiText && report.ai_recommendations) {
+                aiBanner.style.display = 'block';
+                const recs = report.ai_recommendations;
+                aiText.innerHTML = `<strong>Confidence:</strong> ${recs.confidence || '80%'} | <strong>Verdict:</strong> ${recs.summary || ''}<br/><span style="color:#00f090;">• ${recs.actionable_advice || 'Continue monitoring market structure.'}</span>`;
+            }
+
+            const tbody = document.getElementById('fs-sim-trades-table-body');
+            if (tbody && report.recent_trades && report.recent_trades.length > 0) {
+                tbody.innerHTML = report.recent_trades.map((t, idx) => {
+                    const pnlVal = parseFloat(t.pnl || 0);
+                    const isWin = pnlVal >= 0;
+                    return `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <td style="padding:8px; color:var(--text-dim);">#${idx + 1}</td>
+                            <td style="padding:8px; font-weight:bold; color:#fff;">${t.symbol || 'BTCUSDT'}</td>
+                            <td style="padding:8px; color:${t.side === 'LONG' ? '#00f090' : '#ff3366'}; font-weight:bold;">${t.side}</td>
+                            <td style="padding:8px;">$${t.entry_price}</td>
+                            <td style="padding:8px;">$${t.exit_price}</td>
+                            <td style="padding:8px; font-weight:bold; color:${isWin ? '#00f090' : '#ff3366'};">$${pnlVal.toFixed(2)}</td>
+                            <td style="padding:8px; color:${isWin ? '#00f090' : '#ff3366'};">${t.roi_pct || '0'}%</td>
+                            <td style="padding:8px; font-size:11px; color:var(--text-dim);">${t.exit_reason || 'TP_REACHED'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        function drawEquityCurveChartOnCanvas(canvasId, data) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0) return;
+
+            canvas.width = rect.width * (window.devicePixelRatio || 1);
+            canvas.height = (rect.height || 260) * (window.devicePixelRatio || 1);
+            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+
+            const width = rect.width;
+            const height = rect.height || 260;
+            ctx.clearRect(0, 0, width, height);
+
+            if (!data || data.length < 2) return;
+
+            const equities = data.map(d => d.equity);
+            let minEq = Math.min(...equities);
+            let maxEq = Math.max(...equities);
+            const range = (maxEq - minEq) || 100;
+            minEq -= range * 0.05;
+            maxEq += range * 0.05;
+
+            const padding = { top: 20, right: 20, bottom: 25, left: 55 };
+            const chartW = width - padding.left - padding.right;
+            const chartH = height - padding.top - padding.bottom;
+
+            ctx.strokeStyle = 'rgba(0, 240, 144, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (chartH * i / 4);
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+
+                const val = maxEq - ((maxEq - minEq) * i / 4);
+                ctx.fillStyle = '#708090';
+                ctx.font = '10px Roboto Mono, monospace';
+                ctx.fillText('$' + Math.round(val), 5, y + 3);
+            }
+            ctx.stroke();
+
+            const getX = (idx) => padding.left + (chartW * idx / (data.length - 1));
+            const getY = (val) => padding.top + chartH - (chartH * (val - minEq) / (maxEq - minEq));
+
+            const isProfit = equities[equities.length - 1] >= equities[0];
+            const strokeColor = isProfit ? '#00f090' : '#ff3366';
+
+            const grad = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+            grad.addColorStop(0, isProfit ? 'rgba(0, 240, 144, 0.35)' : 'rgba(255, 51, 102, 0.35)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+
+            ctx.beginPath();
+            ctx.moveTo(getX(0), getY(equities[0]));
+            for (let i = 1; i < data.length; i++) {
+                ctx.lineTo(getX(i), getY(equities[i]));
+            }
+            ctx.lineTo(getX(data.length - 1), padding.top + chartH);
+            ctx.lineTo(getX(0), padding.top + chartH);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(getX(0), getY(equities[0]));
+            for (let i = 1; i < data.length; i++) {
+                ctx.lineTo(getX(i), getY(equities[i]));
+            }
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeFullscreenSimulationViewer();
+            }
+        });
+
         // Initialize WebSocket stream & continuous 1-second polling fallback
         window.addEventListener('DOMContentLoaded', () => {
             renderPaperTradingSuiteUI();
+            const simSuiteCard = document.getElementById('strategy-simulation-card');
+            if (simSuiteCard) {
+                simSuiteCard.addEventListener('dblclick', openFullscreenSimulationViewer);
+            }
         });
         renderPaperTradingSuiteUI();
         loadBacktestStrategies();

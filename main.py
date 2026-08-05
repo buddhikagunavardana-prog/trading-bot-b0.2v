@@ -58,6 +58,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Mount static files if directory exists
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Mount all modular routes
 app.include_router(router)
 
@@ -89,3 +96,5 @@ async def startup_event():
     logger.info("Enforcing startup hard reset for paper trading storage...")
     paper_trade_manager.hard_reset_storage()
     asyncio.create_task(trading_logic_loop())
+    from services.exchange_api import prefetch_all_timeframes_cache
+    asyncio.create_task(prefetch_all_timeframes_cache())

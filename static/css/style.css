@@ -1,0 +1,162 @@
+/* Static CSS for CryptoBot AI Fullscreen Simulation Viewer & Terminal Theme */
+
+:root {
+    --fs-bg: #05080e;
+    --fs-card-bg: #0b1018;
+    --fs-card-border: rgba(0, 240, 144, 0.25);
+    --neon-green: #00f090;
+    --neon-green-glow: 0 0 12px rgba(0, 240, 144, 0.4);
+    --neon-green-bright: #00ff66;
+    --neon-red: #ff3366;
+    --neon-yellow: #ffd700;
+    --neon-blue: #00c8ff;
+    --text-dim: #708090;
+}
+
+/* Fullscreen Simulation Modal Overlay */
+.fullscreen-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--fs-bg);
+    background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 240, 144, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(0, 200, 255, 0.03) 0%, transparent 40%);
+    z-index: 999999;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    color: var(--neon-green);
+    font-family: 'Roboto Mono', 'Courier New', monospace;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.fullscreen-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--fs-card-border);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.fullscreen-modal-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--neon-green);
+    text-shadow: var(--neon-green-glow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    letter-spacing: 1px;
+}
+
+.sim-close-btn {
+    background: rgba(255, 51, 102, 0.15);
+    border: 1px solid rgba(255, 51, 102, 0.5);
+    color: #ff4d4d;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sim-close-btn:hover {
+    background: rgba(255, 51, 102, 0.35);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(255, 51, 102, 0.5);
+}
+
+.fullscreen-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.fullscreen-kpi-card {
+    background: var(--fs-card-bg);
+    border: 1px solid var(--fs-card-border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.fullscreen-kpi-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.fullscreen-kpi-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.fullscreen-kpi-value.neon {
+    color: var(--neon-green);
+    text-shadow: 0 0 8px rgba(0, 240, 144, 0.3);
+}
+
+/* Custom terminal box for full-screen viewer logs */
+.fullscreen-terminal {
+    background: #020408;
+    border: 1px solid rgba(0, 240, 144, 0.3);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--neon-green);
+    height: 280px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+}
+
+.fullscreen-terminal::-webkit-scrollbar {
+    width: 6px;
+}
+.fullscreen-terminal::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 144, 0.3);
+    border-radius: 3px;
+}
+
+/* Pulsing status dot */
+.pulse-dot-green {
+    width: 8px;
+    height: 8px;
+    background-color: var(--neon-green);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulseGreen 1.5s infinite;
+}
+
+@keyframes pulseGreen {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 14px var(--neon-green); }
+    100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* Interactive card double-click cue */
+.sim-card-interactive {
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sim-card-interactive:hover {
+    border-color: rgba(0, 240, 144, 0.6) !important;
+    box-shadow: 0 6px 28px rgba(0, 240, 144, 0.15) !important;
+}

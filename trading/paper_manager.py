@@ -23,6 +23,7 @@ class PaperTradeManager:
         self.score_threshold = 70.0
         self.default_position_size = 300.0
         self.default_leverage = 10
+        self.timeframe = "15m"
         self.realized_pnl = 0.0
         self.total_trades = 0
         self.winning_trades = 0
@@ -34,7 +35,7 @@ class PaperTradeManager:
         self.hard_reset_storage()
 
     def _load_settings_from_storage(self):
-        """Loads master bot settings (position size, leverage, score threshold) from bot_settings.json if available."""
+        """Loads master bot settings (position size, leverage, score threshold, timeframe) from bot_settings.json if available."""
         if os.path.exists(SETTINGS_FILE):
             try:
                 with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
@@ -42,7 +43,8 @@ class PaperTradeManager:
                 self.default_position_size = float(sdata.get("position_size", sdata.get("default_position_size", 300.0)))
                 self.default_leverage = int(sdata.get("leverage", sdata.get("default_leverage", 10)))
                 self.score_threshold = float(sdata.get("score_threshold", sdata.get("threshold", 70.0)))
-                logger.info(f"[SETTINGS] Loaded persistent master settings from {SETTINGS_FILE}: Size=${self.default_position_size}, Lev={self.default_leverage}x, Thresh={self.score_threshold}")
+                self.timeframe = str(sdata.get("timeframe", "15m"))
+                logger.info(f"[SETTINGS] Loaded persistent master settings from {SETTINGS_FILE}: Size=${self.default_position_size}, Lev={self.default_leverage}x, Thresh={self.score_threshold}, Timeframe={self.timeframe}")
                 return
             except Exception as e:
                 logger.warning(f"[SETTINGS] Failed to read {SETTINGS_FILE}: {e}")
@@ -51,6 +53,7 @@ class PaperTradeManager:
         self.default_position_size = 300.0
         self.default_leverage = 10
         self.score_threshold = 70.0
+        self.timeframe = "15m"
         self._save_settings_to_storage()
 
     def _save_settings_to_storage(self):
@@ -62,7 +65,8 @@ class PaperTradeManager:
                 "leverage": self.default_leverage,
                 "default_leverage": self.default_leverage,
                 "score_threshold": self.score_threshold,
-                "threshold": self.score_threshold
+                "threshold": self.score_threshold,
+                "timeframe": self.timeframe
             }
             with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
                 json.dump(sdata, f, indent=2)
@@ -232,14 +236,16 @@ class PaperTradeManager:
             "leverage": self.default_leverage,
             "default_leverage": self.default_leverage,
             "score_threshold": self.score_threshold,
-            "threshold": self.score_threshold
+            "threshold": self.score_threshold,
+            "timeframe": self.timeframe
         }
 
     def update_master_settings(
         self,
         position_size: Optional[float] = None,
         leverage: Optional[int] = None,
-        score_threshold: Optional[float] = None
+        score_threshold: Optional[float] = None,
+        timeframe: Optional[str] = None
     ) -> Dict[str, Any]:
         """Updates and permanently persists master bot risk parameters."""
         if position_size is not None and position_size > 0:
@@ -248,6 +254,8 @@ class PaperTradeManager:
             self.default_leverage = int(leverage)
         if score_threshold is not None and 0.0 <= score_threshold <= 100.0:
             self.score_threshold = round(float(score_threshold), 1)
+        if timeframe is not None and str(timeframe).strip():
+            self.timeframe = str(timeframe).strip()
 
         self._save_settings_to_storage()
         self._save_to_storage()

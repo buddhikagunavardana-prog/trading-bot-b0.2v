@@ -319,16 +319,10 @@ STRATEGY_REGISTRY: Dict[str, BaseStrategy] = {
 }
 
 
-def get_available_strategies() -> List[Dict[str, str]]:
+def get_available_strategies() -> List[Dict[str, Any]]:
     """Returns list of registered strategy metadata."""
-    return [
-        {
-            "id": strat.strategy_id,
-            "name": strat.display_name,
-            "description": strat.description
-        }
-        for strat in STRATEGY_REGISTRY.values()
-    ]
+    from trading.strategy_engine import StrategyVersionManager
+    return StrategyVersionManager.list_all_strategies()
 
 
 class BacktestEngine:
@@ -393,6 +387,74 @@ class BacktestEngine:
 
         return candles
 
+    def _get_candles_for_symbol(
+        self,
+        symbol: str,
+        num_bars: int,
+        start_time: datetime,
+        bar_duration_hours: float,
+        timeframe: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Loads real cached/OKX historical candles for symbol & timeframe if available.
+        Projects forward/backward with synthetic candles if additional bars are required.
+        """
+        try:
+            from services.exchange_api import load_klines_from_disk_cache
+            cached_candles = load_klines_from_disk_cache(symbol, timeframe, max_age_seconds=-1)
+            if cached_candles and len(cached_candles) >= 10:
+                formatted = []
+                for c in cached_candles:
+                    formatted.append({
+                        "timestamp": str(c.get("timestamp", "")),
+                        "iso": str(c.get("timestamp", "")),
+                        "open": float(c.get("open", 100.0)),
+                        "high": float(c.get("high", 100.0)),
+                        "low": float(c.get("low", 100.0)),
+                        "close": float(c.get("close", 100.0)),
+                        "volume": float(c.get("volume", 1000.0))
+                    })
+
+                if len(formatted) >= num_bars:
+                    return formatted[-num_bars:]
+
+                last_p = formatted[-1]["close"]
+                last_dt = start_time
+                try:
+                    last_dt = datetime.strptime(formatted[-1]["timestamp"], "%Y-%m-%d %H:%M")
+                except Exception:
+                    pass
+
+                needed = num_bars - len(formatted)
+                drift = random.choice([0.0003, -0.0002, 0.0005, 0.0, 0.0002])
+                curr_p = last_p
+                curr_dt = last_dt
+
+                for _ in range(needed):
+                    curr_dt += timedelta(hours=bar_duration_hours)
+                    volatility = random.uniform(0.008, 0.022)
+                    shock = random.gauss(drift, volatility)
+                    open_p = curr_p
+                    close_p = open_p * (1.0 + shock)
+                    high_p = max(open_p, close_p) * (1.0 + random.uniform(0.001, 0.008))
+                    low_p = min(open_p, close_p) * (1.0 - random.uniform(0.001, 0.008))
+                    vol = random.uniform(100000, 5000000)
+                    formatted.append({
+                        "timestamp": curr_dt.strftime("%Y-%m-%d %H:%M"),
+                        "iso": curr_dt.isoformat(),
+                        "open": round(open_p, 4),
+                        "high": round(high_p, 4),
+                        "low": round(low_p, 4),
+                        "close": round(close_p, 4),
+                        "volume": round(vol, 2)
+                    })
+                    curr_p = close_p
+                return formatted
+        except Exception as e:
+            logger.warning(f"Error loading cached candles for {symbol} ({timeframe}): {e}")
+
+        return self._generate_synthetic_candles(symbol, num_bars, start_time, bar_duration_hours)
+
     def run_simulation(
         self,
         test_mode: str = "BACKTEST",  # BACKTEST or FORWARD_TEST
@@ -404,6 +466,7 @@ class BacktestEngine:
         position_size: float = 300.0,
         leverage: int = 10,
         score_threshold: float = 70.0,
+        timeframe: str = "15m",
         stop_loss_pct: Optional[float] = None,
         take_profit_pct: Optional[float] = None,
         use_custom_params: bool = True,
@@ -426,25 +489,51 @@ class BacktestEngine:
                 start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
                 end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
                 calc_days = max(1, (end_dt - start_dt).days)
-                duration_days = min(365, calc_days)
+                duration_days = min(1825, calc_days)
             except Exception:
                 start_dt = now - timedelta(days=duration_days)
                 end_dt = now
         else:
-            duration_days = max(1, min(365, duration_days))
+            duration_days = max(1, min(1825, duration_days))
             start_dt = now - timedelta(days=duration_days)
             end_dt = now
 
-        bars_per_day = 24  # 1-hour candles
-        total_bars = duration_days * bars_per_day
+        # Compute bar duration hours based on timeframe
+        tf_clean = str(timeframe).lower().strip()
+        if tf_clean == "1m":
+            bar_duration_hours = 1 / 60
+            bars_per_day = 1440
+        elif tf_clean == "5m":
+            bar_duration_hours = 5 / 60
+            bars_per_day = 288
+        elif tf_clean == "15m":
+            bar_duration_hours = 15 / 60
+            bars_per_day = 96
+        elif tf_clean == "1h":
+            bar_duration_hours = 1.0
+            bars_per_day = 24
+        elif tf_clean == "4h":
+            bar_duration_hours = 4.0
+            bars_per_day = 6
+        elif tf_clean in ["1d", "5y"]:
+            bar_duration_hours = 24.0
+            bars_per_day = 1
+        else:
+            bar_duration_hours = 15 / 60
+            bars_per_day = 96
 
-        # Generate candle dataset for each symbol
+        # Cap max simulation bars at 30,000 for high performance
+        total_bars = min(30000, max(10, duration_days * bars_per_day))
+
+        # Generate or load candle dataset for each symbol
         candles_by_symbol = {}
         for sym in symbols:
-            candles_by_symbol[sym] = self._generate_synthetic_candles(
+            candles_by_symbol[sym] = self._get_candles_for_symbol(
                 symbol=sym,
                 num_bars=total_bars + 50,  # extra warm-up bars for indicators
-                start_time=start_dt - timedelta(hours=50)
+                start_time=start_dt - timedelta(hours=50 * bar_duration_hours),
+                bar_duration_hours=bar_duration_hours,
+                timeframe=tf_clean
             )
 
         # State tracking
@@ -703,6 +792,7 @@ class BacktestEngine:
                 "position_size": position_size,
                 "leverage": leverage,
                 "score_threshold": score_threshold,
+                "timeframe": timeframe,
                 "stop_loss_pct": stop_loss_pct,
                 "take_profit_pct": take_profit_pct,
                 "use_custom_params": use_custom_params,

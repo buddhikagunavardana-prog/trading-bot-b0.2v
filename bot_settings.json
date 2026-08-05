@@ -4,5 +4,6 @@
   "leverage": 20,
   "default_leverage": 20,
   "score_threshold": 78.5,
-  "threshold": 78.5
+  "threshold": 78.5,
+  "timeframe": "1h"
 }

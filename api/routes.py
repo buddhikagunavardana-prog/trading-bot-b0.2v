@@ -31,7 +31,7 @@ from models.data_models import ToggleSettingRequest, ThresholdUpdateRequest
 from models.state import bot_state, live_data
 from trading.paper_manager import paper_trade_manager
 from engine.backtest_engine import backtest_engine, get_available_strategies
-from services.ai_agent import generate_post_trade_report
+from services.ai_agent import generate_post_trade_report, generate_backtest_ai_analysis
 from services.telegram_bot import send_telegram_message
 
 logger = logging.getLogger("CryptoBot")
@@ -84,6 +84,42 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.debug(f"WebSocket client disconnected: {e}")
 
 
+@router.websocket("/api/simulation/ws")
+async def simulation_websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            ms = paper_trade_manager.get_master_settings()
+            await websocket.send_json({
+                "type": "simulation_state",
+                "status": "connected",
+                "latest_report": bot_state.get("latest_simulation_report", {}),
+                "recent_logs": bot_state.get("recent_logs", []),
+                "active_timeframe": ms.get("timeframe", "15m"),
+                "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+            })
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.debug(f"Simulation WebSocket disconnected: {e}")
+
+
+@router.get("/api/simulation/state")
+async def get_simulation_state():
+    try:
+        ms = paper_trade_manager.get_master_settings()
+        return JSONResponse(status_code=200, content={
+            "status": "success",
+            "latest_report": bot_state.get("latest_simulation_report", {}),
+            "recent_logs": bot_state.get("recent_logs", []),
+            "active_settings": ms
+        })
+    except Exception as e:
+        logger.error(f"Error fetching simulation state: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+
+
 @router.post("/api/settings/toggle")
 @router.post("/api/toggle")
 async def toggle_setting(payload: Dict[str, Any] = Body(default={})):
@@ -119,11 +155,13 @@ async def update_master_settings(payload: Dict[str, Any] = Body(default={})):
         raw_pos = payload.get("position_size", payload.get("position_size_usdt", payload.get("margin", 300.0)))
         raw_lev = payload.get("leverage", 10)
         raw_thresh = payload.get("score_threshold", payload.get("threshold", 70.0))
+        raw_timeframe = payload.get("timeframe", payload.get("master_timeframe", "15m"))
 
         try:
             pos_val = round(float(raw_pos), 2)
             lev_val = int(raw_lev)
             thresh_val = round(float(raw_thresh), 1)
+            tf_val = str(raw_timeframe).strip() if raw_timeframe else "15m"
         except (ValueError, TypeError):
             return JSONResponse(status_code=400, content={"status": "error", "detail": "Invalid parameter types for master settings."})
 
@@ -137,7 +175,8 @@ async def update_master_settings(payload: Dict[str, Any] = Body(default={})):
         updated = paper_trade_manager.update_master_settings(
             position_size=pos_val,
             leverage=lev_val,
-            score_threshold=thresh_val
+            score_threshold=thresh_val,
+            timeframe=tf_val
         )
 
         bot_state["master_settings"] = updated
@@ -146,7 +185,7 @@ async def update_master_settings(payload: Dict[str, Any] = Body(default={})):
         live_data["master_settings"] = updated
 
         now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
-        log_entry = f"[{now_str}] MASTER_CONFIG: Master settings saved & persisted. Size: ${updated['position_size']} USDT, Leverage: {updated['leverage']}x, Threshold: {updated['score_threshold']}"
+        log_entry = f"[{now_str}] MASTER_CONFIG: Master settings saved & persisted. Size: ${updated['position_size']} USDT, Leverage: {updated['leverage']}x, Threshold: {updated['score_threshold']}, Timeframe: {updated['timeframe']}"
         bot_state["recent_logs"].append(log_entry)
         logger.info(log_entry)
 
@@ -155,7 +194,7 @@ async def update_master_settings(payload: Dict[str, Any] = Body(default={})):
             "master_settings": updated,
             "score_threshold": updated["score_threshold"],
             "threshold": updated["score_threshold"],
-            "message": f"Master settings updated: ${updated['position_size']} USDT @ {updated['leverage']}x leverage, threshold {updated['score_threshold']}"
+            "message": f"Master settings updated: ${updated['position_size']} USDT @ {updated['leverage']}x leverage, threshold {updated['score_threshold']}, timeframe {updated['timeframe']}"
         })
     except Exception as e:
         logger.error(f"Error updating master settings: {e}", exc_info=True)
@@ -208,6 +247,60 @@ async def get_backtest_strategies():
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 
+@router.post("/api/strategies/clone")
+@router.post("/api/simulation/strategy/clone")
+async def clone_strategy_endpoint(payload: Dict[str, Any] = Body(default={})):
+    try:
+        from trading.strategy_engine import strategy_version_manager
+        base_id = payload.get("base_strategy_id", "alpha_engine")
+        version_name = payload.get("version_name", "Alpha Engine Cloned Version")
+        score_thresh = float(payload.get("score_threshold", 70.0))
+        sl_pct = float(payload.get("stop_loss_pct", 2.0))
+        tp_pct = float(payload.get("take_profit_pct", 4.0))
+        description = payload.get("description")
+
+        cloned = strategy_version_manager.clone_strategy(
+            base_strategy_id=base_id,
+            version_name=version_name,
+            score_threshold=score_thresh,
+            stop_loss_pct=sl_pct,
+            take_profit_pct=tp_pct,
+            description=description
+        )
+
+        return JSONResponse(status_code=200, content={
+            "status": "success",
+            "message": f"Successfully created strategy version '{version_name}'",
+            "strategy": cloned.to_dict(),
+            "strategies": get_available_strategies()
+        })
+    except Exception as e:
+        logger.error(f"Error cloning strategy: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+
+
+@router.delete("/api/strategies/{strategy_id}")
+@router.delete("/api/simulation/strategy/{strategy_id}")
+async def delete_strategy_endpoint(strategy_id: str):
+    try:
+        from trading.strategy_engine import strategy_version_manager
+        success = strategy_version_manager.delete_strategy(strategy_id)
+        if success:
+            return JSONResponse(status_code=200, content={
+                "status": "success",
+                "message": f"Successfully deleted strategy version '{strategy_id}'",
+                "strategies": get_available_strategies()
+            })
+        else:
+            return JSONResponse(status_code=400, content={
+                "status": "error",
+                "message": f"Cannot delete strategy '{strategy_id}'. Immutable base templates cannot be deleted."
+            })
+    except Exception as e:
+        logger.error(f"Error deleting strategy: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+
+
 @router.post("/api/backtest/run")
 @router.post("/api/simulation/run")
 @router.post("/api/backtest/simulation")
@@ -226,7 +319,17 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
         position_size = float(payload.get("position_size", master_settings.get("position_size", 300.0)))
         leverage = int(payload.get("leverage", master_settings.get("leverage", 10)))
         score_threshold = float(payload.get("score_threshold", master_settings.get("score_threshold", 70.0)))
-        
+        timeframe = str(payload.get("timeframe", master_settings.get("timeframe", "15m")))
+
+        # Prefetch and cache real OKX candles for requested timeframe
+        try:
+            from services.exchange_api import fetch_okx_candles_extended, MAJOR_PAIRS
+            sim_syms = symbols if symbols else MAJOR_PAIRS
+            for s in sim_syms:
+                await fetch_okx_candles_extended(s, interval=timeframe, limit=500)
+        except Exception as pf_err:
+            logger.warning(f"Simulation candle prefetch warning: {pf_err}")
+
         stop_loss_pct_val = payload.get("stop_loss_pct") if payload.get("stop_loss_pct") is not None else payload.get("sl_pct")
         stop_loss_pct = float(stop_loss_pct_val) if stop_loss_pct_val is not None else None
 
@@ -246,11 +349,19 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
             position_size=position_size,
             leverage=leverage,
             score_threshold=score_threshold,
+            timeframe=timeframe,
             stop_loss_pct=stop_loss_pct,
             take_profit_pct=take_profit_pct,
             use_custom_params=use_custom_params,
             symbols=symbols
         )
+
+        ai_recommendations = await generate_backtest_ai_analysis(
+            report.get("summary", {}),
+            report.get("recent_trades", [])
+        )
+        report["ai_recommendations"] = ai_recommendations
+        bot_state["latest_simulation_report"] = report
 
         now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
         bot_state["recent_logs"].append(
@@ -267,8 +378,10 @@ async def run_backtest_simulation(payload: Dict[str, Any] = Body(default={})):
 @router.post("/api/retry-bootstrap")
 async def retry_bootstrap():
     try:
+        from services.exchange_api import prefetch_all_timeframes_cache
+        asyncio.create_task(prefetch_all_timeframes_cache())
         now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
-        bot_state["recent_logs"].append(f"[{now_str}] DIAGNOSTIC: Triggered retryDataBootstrap(). Multi-exchange REST backfill started.")
+        bot_state["recent_logs"].append(f"[{now_str}] DIAGNOSTIC: Triggered retryDataBootstrap(). Multi-exchange REST backfill and candle caching started.")
         return JSONResponse(status_code=200, content={"status": "success", "message": "Bootstrap retry initiated"})
     except Exception as e:
         logger.error(f"Error retrying bootstrap: {e}", exc_info=True)
