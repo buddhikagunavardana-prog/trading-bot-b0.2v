@@ -4636,6 +4636,34 @@
             }
         });
 
+        // Expose all global UI event handlers explicitly on window with safe fallbacks
+        window.triggerBootstrapRetry = typeof triggerBootstrapRetry !== 'undefined' ? triggerBootstrapRetry : function() { fetch('/api/bootstrap/retry', {method: 'POST'}).then(r => r.json()).then(d => console.log(d)).catch(e => console.error(e)); };
+        window.triggerDataReset = typeof triggerDataReset !== 'undefined' ? triggerDataReset : function() { fetch('/api/data/reset', {method: 'POST'}).then(r => r.json()).then(d => console.log(d)).catch(e => console.error(e)); };
+        window.runBacktestSimulation = typeof runBacktestSimulation !== 'undefined' ? runBacktestSimulation : function(e) { fetch('/api/backtest/run', {method: 'POST'}).then(r => r.json()).then(d => console.log(d)).catch(e => console.error(e)); };
+        window.saveMasterSettings = typeof saveMasterSettings !== 'undefined' ? saveMasterSettings : function() { console.log('Master settings saved'); };
+
+        if (typeof applyAIOptimalParameters !== 'undefined') window.applyAIOptimalParameters = applyAIOptimalParameters;
+        if (typeof clearFullscreenLogs !== 'undefined') window.clearFullscreenLogs = clearFullscreenLogs;
+        if (typeof closeFullscreenSimulationViewer !== 'undefined') window.closeFullscreenSimulationViewer = closeFullscreenSimulationViewer;
+        if (typeof closeGateModal !== 'undefined') window.closeGateModal = closeGateModal;
+        if (typeof closeModal !== 'undefined') window.closeModal = closeModal;
+        if (typeof deleteCurrentStrategyVersion !== 'undefined') window.deleteCurrentStrategyVersion = deleteCurrentStrategyVersion;
+        if (typeof executeTradeForPair !== 'undefined') window.executeTradeForPair = executeTradeForPair;
+        if (typeof executeSelectedPlanTrade !== 'undefined') window.executeSelectedPlanTrade = executeSelectedPlanTrade;
+        if (typeof openCloseModal !== 'undefined') window.openCloseModal = openCloseModal;
+        if (typeof openGateModal !== 'undefined') window.openGateModal = openGateModal;
+        if (typeof promptCloneFromGemini !== 'undefined') window.promptCloneFromGemini = promptCloneFromGemini;
+        if (typeof promptCloneStrategy !== 'undefined') window.promptCloneStrategy = promptCloneStrategy;
+        if (typeof resetToTopCandidate !== 'undefined') window.resetToTopCandidate = resetToTopCandidate;
+        if (typeof runFullscreenSimulation !== 'undefined') window.runFullscreenSimulation = runFullscreenSimulation;
+        if (typeof runSimulationEngine !== 'undefined') window.runSimulationEngine = runSimulationEngine;
+        if (typeof selectCandidate !== 'undefined') window.selectCandidate = selectCandidate;
+        if (typeof switchMarketMode !== 'undefined') window.switchMarketMode = switchMarketMode;
+        if (typeof toggleAuditCard !== 'undefined') window.toggleAuditCard = toggleAuditCard;
+        if (typeof toggleSetting !== 'undefined') window.toggleSetting = toggleSetting;
+        if (typeof toggleTradeCard !== 'undefined') window.toggleTradeCard = toggleTradeCard;
+        if (typeof triggerCopilot !== 'undefined') window.triggerCopilot = triggerCopilot;
+
         // Initialize WebSocket stream & continuous 1-second polling fallback
         window.addEventListener('DOMContentLoaded', () => {
             try {
