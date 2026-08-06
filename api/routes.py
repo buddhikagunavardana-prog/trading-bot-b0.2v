@@ -1027,4 +1027,4 @@ async def close_position(symbol: str):
 @router.get("/", response_class=HTMLResponse)
 async def root_dashboard(request: Request):
     now_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-   return templates.TemplateResponse(request, "index.html", {"now_utc": now_utc})
+    return templates.TemplateResponse(request, "index.html", {"now_utc": now_utc})
