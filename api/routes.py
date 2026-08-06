@@ -1,10 +1,45 @@
 import asyncio
 import logging
-from datetime import datetime
+import functools
+import json
+from datetime import datetime, date
+from decimal import Decimal
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, Union
 from fastapi import APIRouter, HTTPException, Body, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+
+def make_hashable(val: Any) -> Any:
+    """Recursively converts dict, list, set into hashable tuple/frozenset representation to prevent unhashable type: dict errors."""
+    if isinstance(val, dict):
+        return tuple(sorted((str(k), make_hashable(v)) for k, v in val.items()))
+    elif isinstance(val, (list, tuple)):
+        return tuple(make_hashable(item) for item in val)
+    elif isinstance(val, set):
+        return frozenset(make_hashable(item) for item in val)
+    return val
+
+def hashable_lru_cache(maxsize: int = 256, typed: bool = False):
+    """
+    Decorator wrapping functools.lru_cache. Automatically converts mutable dictionary, list, or set
+    arguments into hashable tuples before evaluating the cache key, preventing 'TypeError: unhashable type: dict'.
+    """
+    def decorator(fn):
+        @functools.lru_cache(maxsize=maxsize, typed=typed)
+        def cached_fn(*args, **kwargs):
+            return fn(*args, **kwargs)
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            hashable_args = tuple(make_hashable(arg) for arg in args)
+            hashable_kwargs = {k: make_hashable(v) for k, v in kwargs.items()}
+            return cached_fn(*hashable_args, **hashable_kwargs)
+
+        wrapper.cache_clear = cached_fn.cache_clear
+        wrapper.cache_info = cached_fn.cache_info
+        return wrapper
+
+    return decorator
 
 try:
     from fastapi.templating import Jinja2Templates
@@ -18,11 +53,12 @@ except Exception:
         def TemplateResponse(self, name: str, context: dict):
             file_path = self.directory / name
             content = file_path.read_text(encoding="utf-8")
-            for key, val in context.items():
-                if key != "request":
-                    content = content.replace(f"{{{key}}}", str(val))
-                    content = content.replace(f"{{{{ {key} }}}}", str(val))
-                    content = content.replace(f"{{{{{key}}}}}", str(val))
+            if isinstance(context, dict):
+                for key, val in context.items():
+                    if key != "request":
+                        content = content.replace(f"{{{key}}}", str(val))
+                        content = content.replace(f"{{{{ {key} }}}}", str(val))
+                        content = content.replace(f"{{{{{key}}}}}", str(val))
             return HTMLResponse(content=content)
 
     templates = SimpleTemplates(directory="templates")
@@ -49,9 +85,6 @@ async def health_check():
     return JSONResponse(status_code=200, content={"status": "ok", "service": "CryptoBot AI"})
 
 
-from datetime import datetime, date
-from decimal import Decimal
-
 def to_json_safe(obj: Any) -> Any:
     if obj is None:
         return None
@@ -62,7 +95,16 @@ def to_json_safe(obj: Any) -> Any:
     if isinstance(obj, Decimal):
         return float(obj)
     if isinstance(obj, dict):
-        return {str(k): to_json_safe(v) for k, v in obj.items()}
+        res = {}
+        for k, v in obj.items():
+            if isinstance(k, dict):
+                key_str = json.dumps(k, sort_keys=True)
+            elif isinstance(k, (tuple, list, set)):
+                key_str = str(list(k))
+            else:
+                key_str = str(k)
+            res[key_str] = to_json_safe(v)
+        return res
     if isinstance(obj, (list, tuple, set)):
         return [to_json_safe(item) for item in obj]
     if hasattr(obj, "dict") and callable(getattr(obj, "dict")):
@@ -72,9 +114,14 @@ def to_json_safe(obj: Any) -> Any:
     return str(obj)
 
 
-def is_forex_symbol_check(s: str) -> bool:
+@hashable_lru_cache(maxsize=512)
+def is_forex_symbol_check(s: Any) -> bool:
     if not s:
         return False
+    if isinstance(s, dict):
+        s = s.get("symbol", "")
+    elif isinstance(s, (tuple, list)):
+        s = s[0] if len(s) > 0 else ""
     s_u = str(s).upper()
     if "USDT" in s_u:
         return False

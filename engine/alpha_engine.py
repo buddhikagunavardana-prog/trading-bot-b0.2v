@@ -1,12 +1,46 @@
 import logging
+import functools
 from typing import Dict, Any, List, Optional
 from models.data_models import CryptoTicker, MarketRegime
 
 logger = logging.getLogger("CryptoBot")
 
+def make_hashable(val: Any) -> Any:
+    """Recursively converts dict, list, set into hashable tuple/frozenset representation to prevent unhashable type: dict errors."""
+    if isinstance(val, dict):
+        return tuple(sorted((str(k), make_hashable(v)) for k, v in val.items()))
+    elif isinstance(val, (list, tuple)):
+        return tuple(make_hashable(item) for item in val)
+    elif isinstance(val, set):
+        return frozenset(make_hashable(item) for item in val)
+    return val
+
+def hashable_lru_cache(maxsize: int = 256, typed: bool = False):
+    """
+    Decorator wrapping functools.lru_cache. Converts dicts and mutable arguments to hashable
+    tuples before caching, preventing 'TypeError: unhashable type: dict'.
+    """
+    def decorator(fn):
+        @functools.lru_cache(maxsize=maxsize, typed=typed)
+        def cached_fn(*args, **kwargs):
+            return fn(*args, **kwargs)
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            hashable_args = tuple(make_hashable(arg) for arg in args)
+            hashable_kwargs = {k: make_hashable(v) for k, v in kwargs.items()}
+            return cached_fn(*hashable_args, **hashable_kwargs)
+
+        wrapper.cache_clear = cached_fn.cache_clear
+        wrapper.cache_info = cached_fn.cache_info
+        return wrapper
+
+    return decorator
+
+@hashable_lru_cache(maxsize=1024)
 def calculate_rsi(prices: List[float], period: int = 14) -> float:
     """Calculates Relative Strength Index (RSI) for a list of closing prices."""
-    if len(prices) < period + 1:
+    if not prices or len(prices) < period + 1:
         return 50.0
     deltas = [prices[i] - prices[i - 1] for i in range(1, len(prices))]
     gains = [d if d > 0 else 0.0 for d in deltas]
@@ -26,6 +60,7 @@ def calculate_rsi(prices: List[float], period: int = 14) -> float:
     return round(max(0.0, min(100.0, rsi)), 1)
 
 
+@hashable_lru_cache(maxsize=1024)
 def calculate_sma(prices: List[float], period: int) -> float:
     """Calculates Simple Moving Average (SMA) for a list of closing prices."""
     if not prices:

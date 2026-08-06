@@ -4,11 +4,11 @@ import time
 import asyncio
 import random
 import logging
+import functools
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 import httpx
 
-from typing import Tuple, Dict
 from models.data_models import CryptoTicker, MarketRegime
 from models.state import live_data, bot_state
 from engine.alpha_engine import calculate_rsi, calculate_sma, AlphaEngine
@@ -24,6 +24,55 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 # Fast in-memory cache
 MEMORY_KLINE_CACHE: Dict[str, Dict[str, Any]] = {}
 GEO_BLOCKED_PROVIDERS: set = set()
+
+def make_hashable(val: Any) -> Any:
+    """Recursively converts dict, list, set into hashable tuple/frozenset representation to prevent unhashable type: dict errors."""
+    if isinstance(val, dict):
+        return tuple(sorted((str(k), make_hashable(v)) for k, v in val.items()))
+    elif isinstance(val, list):
+        return tuple(make_hashable(item) for item in val)
+    elif isinstance(val, set):
+        return frozenset(make_hashable(item) for item in val)
+    return val
+
+def hashable_lru_cache(maxsize: int = 128, typed: bool = False):
+    """
+    Decorator wrapping functools.lru_cache. Converts dicts and mutable arguments to hashable
+    tuples before caching, preventing 'TypeError: unhashable type: dict'.
+    """
+    def decorator(fn):
+        @functools.lru_cache(maxsize=maxsize, typed=typed)
+        def cached_fn(*args, **kwargs):
+            return fn(*args, **kwargs)
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            hashable_args = tuple(make_hashable(arg) for arg in args)
+            hashable_kwargs = {k: make_hashable(v) for k, v in kwargs.items()}
+            return cached_fn(*hashable_args, **hashable_kwargs)
+
+        wrapper.cache_clear = cached_fn.cache_clear
+        wrapper.cache_info = cached_fn.cache_info
+        return wrapper
+
+    return decorator
+
+def is_geo_blocked(provider: Any) -> bool:
+    """Safely checks if provider is geo-blocked without failing if a dict is passed."""
+    if isinstance(provider, dict):
+        pname = str(provider.get("name", ""))
+    else:
+        pname = str(provider)
+    return pname in GEO_BLOCKED_PROVIDERS
+
+def mark_geo_blocked(provider: Any):
+    """Safely adds provider to GEO_BLOCKED_PROVIDERS set."""
+    if isinstance(provider, dict):
+        pname = str(provider.get("name", ""))
+    else:
+        pname = str(provider)
+    if pname:
+        GEO_BLOCKED_PROVIDERS.add(pname)
 
 MAJOR_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT', 'BNBUSDT']
 CRYPTO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LINK/USDT', 'BNB/USDT']
@@ -354,7 +403,7 @@ async def fetch_klines(
     inv = interval.lower().strip()
 
     for p in candidate_providers:
-        if p in GEO_BLOCKED_PROVIDERS:
+        if is_geo_blocked(p):
             continue
         try:
             if p == "BYBIT":
@@ -363,7 +412,7 @@ async def fetch_klines(
                 url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval={interval_str}&limit={min(limit, 200)}"
                 res = await client.get(url, headers=headers)
                 if res.status_code in [403, 451]:
-                    GEO_BLOCKED_PROVIDERS.add(p)
+                    mark_geo_blocked(p)
                     continue
                 elif res.status_code == 200:
                     data = res.json()
@@ -378,7 +427,7 @@ async def fetch_klines(
                 url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={bin_inv}&limit={min(limit, 200)}"
                 res = await client.get(url, headers=headers)
                 if res.status_code in [403, 451]:
-                    GEO_BLOCKED_PROVIDERS.add(p)
+                    mark_geo_blocked(p)
                     continue
                 elif res.status_code == 200:
                     data = res.json()
@@ -489,8 +538,8 @@ async def _fetch_live_market_data_internal():
             scan_pairs = FOREX_PAIRS
         else:
             for p in providers:
-                if p["name"] in GEO_BLOCKED_PROVIDERS:
-                    logger.debug(f"[LIVE TICKER REQ] Skipping geo-blocked provider {p['name']}")
+                if is_geo_blocked(p):
+                    logger.debug(f"[LIVE TICKER REQ] Skipping geo-blocked provider {p.get('name', p)}")
                     continue
                 try:
                     response = await client.get(p["url"], headers=headers)
@@ -506,8 +555,8 @@ async def _fetch_live_market_data_internal():
                             logger.info(f"Successfully fetched major pairs ticker data from {p['name']}")
                             break
                     elif response.status_code in [403, 451]:
-                        if p["name"] not in GEO_BLOCKED_PROVIDERS:
-                            GEO_BLOCKED_PROVIDERS.add(p["name"])
+                        if not is_geo_blocked(p):
+                            mark_geo_blocked(p)
                             logger.info(f"Provider {p['name']} HTTP status {response.status_code} (Geo-restricted). Prioritizing OKX.")
                     else:
                         logger.warning(f"Provider {p['name']} HTTP status {response.status_code} at {p['url']}")
