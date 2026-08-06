@@ -84,3 +84,11 @@ websockets
 winloop
 yarl
 zlib-ng
+flask
+fastapi
+
+
+
+
+
+
