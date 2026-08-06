@@ -354,10 +354,16 @@ async def set_market_mode(request: Request = None, payload: Dict[str, Any] = Bod
             logger.error(f"Error appending log message: {le}")
 
         try:
-            from services.exchange_api import run_alpha_scanner_loop
-            asyncio.create_task(run_alpha_scanner_loop())
+            from services.exchange_api import fetch_live_market_data
+            await fetch_live_market_data()
         except Exception as se:
-            logger.error(f"Error triggering scanner loop: {se}")
+            logger.error(f"Error triggering market data fetch on mode change: {se}")
+
+        readiness = paper_trade_manager.get_candle_readiness_diagnostics(market_mode=new_mode)
+        if isinstance(bot_state, dict):
+            bot_state["candles_readiness"] = readiness
+        if isinstance(live_data, dict):
+            live_data["candles_readiness"] = readiness
 
         return JSONResponse(status_code=200, content=to_json_safe({
             "status": "success",
@@ -365,6 +371,7 @@ async def set_market_mode(request: Request = None, payload: Dict[str, Any] = Bod
             "market_mode": new_mode,
             "bot_state": bot_state if isinstance(bot_state, dict) else {},
             "live_data": live_data if isinstance(live_data, dict) else {},
+            "candles_readiness": readiness,
             "message": f"Market mode successfully set to {new_mode}"
         }))
     except Exception as e:
@@ -555,11 +562,17 @@ async def execute_trade_endpoint(payload: Dict[str, Any] = Body(default={})):
 
 
 @router.get("/api/settings/master")
+@router.get("/api/settings/master")
 @router.get("/api/master-settings")
-async def get_master_settings():
+async def get_master_settings(market_mode: Optional[str] = None):
     try:
-        settings = paper_trade_manager.get_master_settings()
-        return JSONResponse(status_code=200, content={"status": "success", "master_settings": settings})
+        settings = paper_trade_manager.get_master_settings(market_mode=market_mode)
+        active_mode = bot_state.get("market_mode", "CRYPTO") if isinstance(bot_state, dict) else "CRYPTO"
+        return JSONResponse(status_code=200, content={
+            "status": "success",
+            "market_mode": active_mode,
+            "master_settings": settings
+        })
     except Exception as e:
         logger.error(f"Error getting master settings: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
@@ -570,53 +583,129 @@ async def get_master_settings():
 @router.post("/api/settings/save")
 async def update_master_settings(payload: Dict[str, Any] = Body(default={})):
     try:
-        raw_pos = payload.get("position_size", payload.get("position_size_usdt", payload.get("margin", 300.0)))
-        raw_lev = payload.get("leverage", 10)
-        raw_thresh = payload.get("score_threshold", payload.get("threshold", 70.0))
+        market_mode = str(payload.get("market_mode") or bot_state.get("market_mode", "CRYPTO")).upper()
+        if market_mode not in ["CRYPTO", "FOREX"]:
+            market_mode = "CRYPTO"
+
+        raw_pos = payload.get("position_size", payload.get("position_size_usdt", payload.get("margin", 300.0 if market_mode == "CRYPTO" else 500.0)))
+        raw_lev = payload.get("leverage", 10 if market_mode == "CRYPTO" else 20)
+        raw_thresh = payload.get("score_threshold", payload.get("threshold", 70.0 if market_mode == "CRYPTO" else 65.0))
         raw_timeframe = payload.get("timeframe", payload.get("master_timeframe", "15m"))
+        raw_sl = payload.get("stop_loss_pct", payload.get("sl_pct", 3.5 if market_mode == "CRYPTO" else 1.0))
+        raw_tp = payload.get("take_profit_pct", payload.get("tp_pct", 5.5 if market_mode == "CRYPTO" else 2.0))
+        is_running = payload.get("is_running")
 
         try:
-            pos_val = round(float(raw_pos), 2)
-            lev_val = int(raw_lev)
-            thresh_val = round(float(raw_thresh), 1)
-            tf_val = str(raw_timeframe).strip() if raw_timeframe else "15m"
+            pos_val = round(float(raw_pos), 2) if raw_pos is not None else None
+            lev_val = int(raw_lev) if raw_lev is not None else None
+            thresh_val = round(float(raw_thresh), 1) if raw_thresh is not None else None
+            tf_val = str(raw_timeframe).strip() if raw_timeframe else None
+            sl_val = round(float(raw_sl), 2) if raw_sl is not None else None
+            tp_val = round(float(raw_tp), 2) if raw_tp is not None else None
         except (ValueError, TypeError):
             return JSONResponse(status_code=400, content={"status": "error", "detail": "Invalid parameter types for master settings."})
 
-        if pos_val <= 0:
-            return JSONResponse(status_code=400, content={"status": "error", "detail": "Position size/margin must be greater than 0 USDT."})
-        if lev_val < 1 or lev_val > 125:
+        if pos_val is not None and pos_val <= 0:
+            return JSONResponse(status_code=400, content={"status": "error", "detail": "Position size/margin must be greater than 0."})
+        if lev_val is not None and (lev_val < 1 or lev_val > 125):
             return JSONResponse(status_code=400, content={"status": "error", "detail": "Leverage must be between 1x and 125x."})
-        if thresh_val < 0.0 or thresh_val > 100.0:
+        if thresh_val is not None and (thresh_val < 0.0 or thresh_val > 100.0):
             return JSONResponse(status_code=400, content={"status": "error", "detail": "Score threshold must be between 0.0 and 100.0."})
 
         updated = paper_trade_manager.update_master_settings(
+            market_mode=market_mode,
             position_size=pos_val,
             leverage=lev_val,
             score_threshold=thresh_val,
-            timeframe=tf_val
+            timeframe=tf_val,
+            stop_loss_pct=sl_val,
+            take_profit_pct=tp_val,
+            is_running=is_running
         )
 
+        # Switch active market mode to current selected mode if bot started or explicitly selected
+        if is_running is True or payload.get("switch_active") is True:
+            bot_state["market_mode"] = market_mode
+            live_data["market_mode"] = market_mode
+
         bot_state["master_settings"] = updated
-        bot_state["score_threshold"] = updated["score_threshold"]
-        bot_state["threshold"] = updated["score_threshold"]
         live_data["master_settings"] = updated
 
+        target_cfg = updated.get("forex" if market_mode == "FOREX" else "crypto", {})
+        run_status_str = "ACTIVE (Running)" if target_cfg.get("is_running") else "STOPPED"
+
         now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
-        log_entry = f"[{now_str}] MASTER_CONFIG: Master settings saved & persisted. Size: ${updated['position_size']} USDT, Leverage: {updated['leverage']}x, Threshold: {updated['score_threshold']}, Timeframe: {updated['timeframe']}"
+        log_entry = f"[{now_str}] MASTER_CONFIG ({market_mode}): Settings updated & bot state set to {run_status_str}. Size: ${target_cfg.get('position_size')}, Lev: {target_cfg.get('leverage')}x, Thresh: {target_cfg.get('score_threshold')}, Timeframe: {target_cfg.get('timeframe')}"
         bot_state["recent_logs"].append(log_entry)
         logger.info(log_entry)
 
+        # Trigger live market data refresh
+        try:
+            from services.exchange_api import fetch_live_market_data
+            asyncio.create_task(fetch_live_market_data())
+        except Exception as se:
+            logger.error(f"Error triggering market data update on master settings change: {se}")
+
         return JSONResponse(status_code=200, content={
             "status": "success",
+            "market_mode": market_mode,
             "master_settings": updated,
-            "score_threshold": updated["score_threshold"],
-            "threshold": updated["score_threshold"],
-            "message": f"Master settings updated: ${updated['position_size']} USDT @ {updated['leverage']}x leverage, threshold {updated['score_threshold']}, timeframe {updated['timeframe']}"
+            "target_settings": target_cfg,
+            "message": f"{market_mode} master settings persisted & bot auto-execution status is {run_status_str}."
         })
     except Exception as e:
         logger.error(f"Error updating master settings: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e), "message": f"Failed to save settings: {str(e)}"})
+
+
+@router.post("/api/bot/toggle")
+@router.post("/api/bot/stop")
+@router.post("/api/bot/start")
+async def toggle_bot_execution_endpoint(payload: Dict[str, Any] = Body(default={})):
+    try:
+        market_mode = str(payload.get("market_mode") or bot_state.get("market_mode", "CRYPTO")).upper()
+        if market_mode not in ["CRYPTO", "FOREX"]:
+            market_mode = "CRYPTO"
+
+        is_running = payload.get("is_running")
+        if is_running is None:
+            # Check action parameter or toggle
+            action = payload.get("action")
+            if action == "start":
+                is_running = True
+            elif action == "stop":
+                is_running = False
+
+        new_status = paper_trade_manager.toggle_bot_running(market_mode=market_mode, is_running=is_running)
+        if new_status:
+            bot_state["market_mode"] = market_mode
+            live_data["market_mode"] = market_mode
+
+        all_ms = paper_trade_manager.get_master_settings()
+        bot_state["master_settings"] = all_ms
+        live_data["master_settings"] = all_ms
+
+        now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
+        status_label = "STARTED" if new_status else "STOPPED"
+        log_msg = f"[{now_str}] BOT_STATUS_CHANGE: {market_mode} Auto-Execution Engine {status_label}."
+        bot_state["recent_logs"].append(log_msg)
+
+        try:
+            from services.exchange_api import fetch_live_market_data
+            asyncio.create_task(fetch_live_market_data())
+        except Exception:
+            pass
+
+        return JSONResponse(status_code=200, content={
+            "status": "success",
+            "market_mode": market_mode,
+            "is_running": new_status,
+            "master_settings": all_ms,
+            "message": f"{market_mode} engine status set to {'ACTIVE' if new_status else 'STOPPED'}."
+        })
+    except Exception as e:
+        logger.error(f"Error toggling bot status: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 
 @router.post("/api/update-threshold")

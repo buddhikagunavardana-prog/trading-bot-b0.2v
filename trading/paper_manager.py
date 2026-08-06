@@ -20,6 +20,30 @@ class PaperTradeManager:
     def __init__(self, initial_balance: float = 10000.0):
         self.initial_balance = initial_balance
         self.wallet_balance = initial_balance
+        self.crypto_settings = {
+            "position_size": 300.0,
+            "default_position_size": 300.0,
+            "leverage": 10,
+            "default_leverage": 10,
+            "score_threshold": 70.0,
+            "threshold": 70.0,
+            "timeframe": "15m",
+            "stop_loss_pct": 3.5,
+            "take_profit_pct": 5.5,
+            "is_running": False
+        }
+        self.forex_settings = {
+            "position_size": 500.0,
+            "default_position_size": 500.0,
+            "leverage": 20,
+            "default_leverage": 20,
+            "score_threshold": 65.0,
+            "threshold": 65.0,
+            "timeframe": "15m",
+            "stop_loss_pct": 1.0,
+            "take_profit_pct": 2.0,
+            "is_running": False
+        }
         self.score_threshold = 70.0
         self.default_position_size = 300.0
         self.default_leverage = 10
@@ -35,38 +59,53 @@ class PaperTradeManager:
         self.hard_reset_storage()
 
     def _load_settings_from_storage(self):
-        """Loads master bot settings (position size, leverage, score threshold, timeframe) from bot_settings.json if available."""
+        """Loads master bot settings for Crypto and Forex from bot_settings.json if available."""
         if os.path.exists(SETTINGS_FILE):
             try:
                 with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                     sdata = json.load(f)
-                self.default_position_size = float(sdata.get("position_size", sdata.get("default_position_size", 300.0)))
-                self.default_leverage = int(sdata.get("leverage", sdata.get("default_leverage", 10)))
-                self.score_threshold = float(sdata.get("score_threshold", sdata.get("threshold", 70.0)))
-                self.timeframe = str(sdata.get("timeframe", "15m"))
-                logger.info(f"[SETTINGS] Loaded persistent master settings from {SETTINGS_FILE}: Size=${self.default_position_size}, Lev={self.default_leverage}x, Thresh={self.score_threshold}, Timeframe={self.timeframe}")
+                
+                if "crypto_settings" in sdata and isinstance(sdata["crypto_settings"], dict):
+                    self.crypto_settings.update(sdata["crypto_settings"])
+                else:
+                    self.crypto_settings["position_size"] = float(sdata.get("position_size", 300.0))
+                    self.crypto_settings["default_position_size"] = self.crypto_settings["position_size"]
+                    self.crypto_settings["leverage"] = int(sdata.get("leverage", 10))
+                    self.crypto_settings["default_leverage"] = self.crypto_settings["leverage"]
+                    self.crypto_settings["score_threshold"] = float(sdata.get("score_threshold", 70.0))
+                    self.crypto_settings["threshold"] = self.crypto_settings["score_threshold"]
+                    self.crypto_settings["timeframe"] = str(sdata.get("timeframe", "15m"))
+
+                if "forex_settings" in sdata and isinstance(sdata["forex_settings"], dict):
+                    self.forex_settings.update(sdata["forex_settings"])
+
+                # Sync legacy instance variables for Crypto
+                self.default_position_size = self.crypto_settings["position_size"]
+                self.default_leverage = self.crypto_settings["leverage"]
+                self.score_threshold = self.crypto_settings["score_threshold"]
+                self.timeframe = self.crypto_settings["timeframe"]
+
+                logger.info(f"[SETTINGS] Loaded persistent master settings from {SETTINGS_FILE}: Crypto={self.crypto_settings}, Forex={self.forex_settings}")
                 return
             except Exception as e:
                 logger.warning(f"[SETTINGS] Failed to read {SETTINGS_FILE}: {e}")
 
-        # Default master settings if no file exists yet
-        self.default_position_size = 300.0
-        self.default_leverage = 10
-        self.score_threshold = 70.0
-        self.timeframe = "15m"
         self._save_settings_to_storage()
 
     def _save_settings_to_storage(self):
-        """Persists master bot settings to bot_settings.json."""
+        """Persists master bot settings for both Crypto and Forex to bot_settings.json."""
         try:
             sdata = {
-                "position_size": self.default_position_size,
-                "default_position_size": self.default_position_size,
-                "leverage": self.default_leverage,
-                "default_leverage": self.default_leverage,
-                "score_threshold": self.score_threshold,
-                "threshold": self.score_threshold,
-                "timeframe": self.timeframe
+                "crypto_settings": self.crypto_settings,
+                "forex_settings": self.forex_settings,
+                # Legacy top-level fallback
+                "position_size": self.crypto_settings["position_size"],
+                "default_position_size": self.crypto_settings["position_size"],
+                "leverage": self.crypto_settings["leverage"],
+                "default_leverage": self.crypto_settings["leverage"],
+                "score_threshold": self.crypto_settings["score_threshold"],
+                "threshold": self.crypto_settings["score_threshold"],
+                "timeframe": self.crypto_settings["timeframe"]
             }
             with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
                 json.dump(sdata, f, indent=2)
@@ -228,38 +267,84 @@ class PaperTradeManager:
         self._save_to_storage()
         return self.score_threshold
 
-    def get_master_settings(self) -> Dict[str, Any]:
-        """Returns the current master bot settings."""
+    def get_master_settings(self, market_mode: Optional[str] = None) -> Dict[str, Any]:
+        """Returns master bot settings for specified mode or combined settings."""
+        if market_mode == "CRYPTO":
+            return dict(self.crypto_settings)
+        elif market_mode == "FOREX":
+            return dict(self.forex_settings)
+
+        # Combined structure containing both crypto and forex objects, plus active defaults
         return {
-            "position_size": self.default_position_size,
-            "default_position_size": self.default_position_size,
-            "leverage": self.default_leverage,
-            "default_leverage": self.default_leverage,
-            "score_threshold": self.score_threshold,
-            "threshold": self.score_threshold,
-            "timeframe": self.timeframe
+            "crypto": dict(self.crypto_settings),
+            "forex": dict(self.forex_settings),
+            "crypto_settings": dict(self.crypto_settings),
+            "forex_settings": dict(self.forex_settings),
+            # Backwards compatibility top-level properties
+            "position_size": self.crypto_settings["position_size"],
+            "default_position_size": self.crypto_settings["position_size"],
+            "leverage": self.crypto_settings["leverage"],
+            "default_leverage": self.crypto_settings["leverage"],
+            "score_threshold": self.crypto_settings["score_threshold"],
+            "threshold": self.crypto_settings["score_threshold"],
+            "timeframe": self.crypto_settings["timeframe"],
+            "stop_loss_pct": self.crypto_settings.get("stop_loss_pct", 3.5),
+            "take_profit_pct": self.crypto_settings.get("take_profit_pct", 5.5),
+            "crypto_is_running": self.crypto_settings.get("is_running", False),
+            "forex_is_running": self.forex_settings.get("is_running", False)
         }
 
     def update_master_settings(
         self,
+        market_mode: str = "CRYPTO",
         position_size: Optional[float] = None,
         leverage: Optional[int] = None,
         score_threshold: Optional[float] = None,
-        timeframe: Optional[str] = None
+        timeframe: Optional[str] = None,
+        stop_loss_pct: Optional[float] = None,
+        take_profit_pct: Optional[float] = None,
+        is_running: Optional[bool] = None
     ) -> Dict[str, Any]:
-        """Updates and permanently persists master bot risk parameters."""
+        """Updates and permanently persists master bot risk parameters for Crypto or Forex."""
+        target = self.forex_settings if str(market_mode).upper() == "FOREX" else self.crypto_settings
+
         if position_size is not None and position_size > 0:
-            self.default_position_size = round(float(position_size), 2)
+            target["position_size"] = round(float(position_size), 2)
+            target["default_position_size"] = target["position_size"]
         if leverage is not None and leverage >= 1:
-            self.default_leverage = int(leverage)
+            target["leverage"] = int(leverage)
+            target["default_leverage"] = target["leverage"]
         if score_threshold is not None and 0.0 <= score_threshold <= 100.0:
-            self.score_threshold = round(float(score_threshold), 1)
+            target["score_threshold"] = round(float(score_threshold), 1)
+            target["threshold"] = target["score_threshold"]
         if timeframe is not None and str(timeframe).strip():
-            self.timeframe = str(timeframe).strip()
+            target["timeframe"] = str(timeframe).strip()
+        if stop_loss_pct is not None and stop_loss_pct >= 0:
+            target["stop_loss_pct"] = round(float(stop_loss_pct), 2)
+        if take_profit_pct is not None and take_profit_pct >= 0:
+            target["take_profit_pct"] = round(float(take_profit_pct), 2)
+        if is_running is not None:
+            target["is_running"] = bool(is_running)
+
+        if str(market_mode).upper() == "CRYPTO":
+            self.default_position_size = self.crypto_settings["position_size"]
+            self.default_leverage = self.crypto_settings["leverage"]
+            self.score_threshold = self.crypto_settings["score_threshold"]
+            self.timeframe = self.crypto_settings["timeframe"]
 
         self._save_settings_to_storage()
         self._save_to_storage()
         return self.get_master_settings()
+
+    def toggle_bot_running(self, market_mode: str = "CRYPTO", is_running: Optional[bool] = None) -> bool:
+        """Toggles or sets running status for the given market mode."""
+        target = self.forex_settings if str(market_mode).upper() == "FOREX" else self.crypto_settings
+        if is_running is not None:
+            target["is_running"] = bool(is_running)
+        else:
+            target["is_running"] = not target.get("is_running", False)
+        self._save_settings_to_storage()
+        return target["is_running"]
 
     def get_total_equity(self) -> float:
         unrealized = sum(p["pnl"] for p in self.active_positions.values())
@@ -659,14 +744,30 @@ class PaperTradeManager:
 
     def get_candle_readiness_diagnostics(self, market_mode: str = "CRYPTO") -> List[Dict[str, Any]]:
         is_fx = (market_mode == "FOREX")
-        base_px = 1.0885 if is_fx else 65420.50
-        return [
-            {"tf": "1m", "count": 1000, "required": 1000, "status": "READY", "last_close": base_px},
-            {"tf": "5m", "count": 1000, "required": 1000, "status": "READY", "last_close": base_px + (0.0001 if is_fx else 15.20)},
-            {"tf": "15m", "count": 1000, "required": 1000, "status": "READY", "last_close": base_px - (0.0002 if is_fx else 32.50)},
-            {"tf": "1h", "count": 1000, "required": 1000, "status": "READY", "last_close": base_px + (0.0005 if is_fx else 120.00)},
-            {"tf": "4h", "count": 1000, "required": 1000, "status": "READY", "last_close": base_px - (0.0010 if is_fx else 210.00)},
-            {"tf": "1d", "count": 365, "required": 365, "status": "READY", "last_close": base_px - (0.0025 if is_fx else 530.00)}
-        ]
+        try:
+            from services.exchange_api import BASE_PRICES
+            default_px = 1.0885 if is_fx else 65420.50
+            base_px = float(BASE_PRICES.get("EURUSD=X" if is_fx else "BTCUSDT", default_px))
+        except Exception:
+            base_px = 1.0885 if is_fx else 65420.50
+
+        if is_fx:
+            return [
+                {"tf": "1m", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px, 4)},
+                {"tf": "5m", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px + 0.0001, 4)},
+                {"tf": "15m", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px - 0.0002, 4)},
+                {"tf": "1h", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px + 0.0005, 4)},
+                {"tf": "4h", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px - 0.0010, 4)},
+                {"tf": "1d", "count": 365, "required": 365, "status": "READY", "last_close": round(base_px - 0.0025, 4)}
+            ]
+        else:
+            return [
+                {"tf": "1m", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px, 2)},
+                {"tf": "5m", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px + 15.20, 2)},
+                {"tf": "15m", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px - 32.50, 2)},
+                {"tf": "1h", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px + 120.00, 2)},
+                {"tf": "4h", "count": 1000, "required": 1000, "status": "READY", "last_close": round(base_px - 210.00, 2)},
+                {"tf": "1d", "count": 365, "required": 365, "status": "READY", "last_close": round(base_px - 530.00, 2)}
+            ]
 
 paper_trade_manager = PaperTradeManager(initial_balance=10000.0)

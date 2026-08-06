@@ -881,120 +881,224 @@
 
             <!-- Master Bot Settings & Risk Control Card -->
             <div class="card" style="background: linear-gradient(135deg, rgba(13,17,28,0.98), rgba(20,24,38,0.95)); border: 1px solid rgba(0, 240, 144, 0.4); box-shadow: 0 4px 24px rgba(0, 240, 144, 0.12);">
-                <div class="card-header" style="border-bottom: 1px dashed rgba(0, 240, 144, 0.25); padding-bottom: 10px;">
+                <div class="card-header" style="border-bottom: 1px dashed rgba(0, 240, 144, 0.25); padding-bottom: 12px; flex-wrap:wrap; gap:10px;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <h3 class="card-title" style="color:var(--accent-green-bright); font-size:16px; letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
                             ⚡ Master Bot Settings & Risk Control
                         </h3>
                         <span style="font-size:10px; background:rgba(0, 240, 144, 0.15); color:var(--accent-green-bright); padding:3px 8px; border-radius:12px; font-weight:bold; border:1px solid rgba(0, 240, 144, 0.3);">
-                            CYBERPUNK AUTO-EXECUTION ENGINE
+                            INDEPENDENT DUAL ENGINE
                         </span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="color:var(--text-muted); font-size:11px;">PERSISTED (trades_history_v2.json)</span>
-                        <span class="badge-pass" id="threshold-val-badge" style="font-size:13px; font-weight:bold; font-family:'Roboto Mono', monospace;">70.0</span>
-                    </div>
-                </div>
 
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:14px; margin-bottom:16px;">
-                    
-                    <!-- Input 1: Default Position Size / Margin -->
-                    <div style="background:var(--chip-bg); padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <label style="font-size:12px; font-weight:bold; color:var(--accent-yellow); text-transform:uppercase; letter-spacing:0.5px;">
-                                💵 Margin / Position Size (USDT)
-                            </label>
-                            <span style="font-size:10px; color:var(--text-muted);">Per Auto Trade</span>
-                        </div>
-                        <input type="number" id="master-position-size-input" min="10" max="50000" step="10" value="300" style="width:100%; background:#080b11; border:1px solid rgba(242, 169, 0, 0.5); color:#fff; padding:8px 12px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:15px; font-weight:bold; outline:none; box-sizing:border-box;">
-                        <div style="font-size:10px; color:var(--text-muted); margin-top:6px; line-height:1.3;">
-                            Standard margin allocated per executed trade (e.g., $300.00 USDT).
-                        </div>
-                    </div>
-
-                    <!-- Input 2: Default Leverage -->
-                    <div style="background:var(--chip-bg); padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <label style="font-size:12px; font-weight:bold; color:#64b5f6; text-transform:uppercase; letter-spacing:0.5px;">
-                                ⚡ Default Leverage
-                            </label>
-                            <span style="font-size:10px; color:var(--text-muted);">Futures Multiplier</span>
-                        </div>
-                        <input type="number" id="master-leverage-input" min="1" max="125" step="1" value="10" style="width:100%; background:#080b11; border:1px solid rgba(100, 181, 246, 0.5); color:#fff; padding:8px 12px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:15px; font-weight:bold; outline:none; box-sizing:border-box;">
-                        <div style="font-size:10px; color:var(--text-muted); margin-top:6px; line-height:1.3;">
-                            Multiplier applied to margin (e.g., 10x = $3,000 position notional).
-                        </div>
-                    </div>
-
-                    <!-- Input 3: Score Threshold -->
-                    <div style="background:var(--chip-bg); padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <label style="font-size:12px; font-weight:bold; color:var(--accent-green-bright); text-transform:uppercase; letter-spacing:0.5px;">
-                                🎯 Score Threshold
-                            </label>
-                            <span class="metric-val" id="active-threshold-disp" style="color:var(--accent-yellow); font-size:13px; font-family:'Roboto Mono', monospace; font-weight:bold;">70.0 / 100</span>
-                        </div>
-                        <input type="number" id="threshold-num-input" min="0" max="100" step="0.5" value="70.0" oninput="onThresholdNumChange(this.value)" style="width:100%; background:#080b11; border:1px solid rgba(0, 240, 144, 0.5); color:#fff; padding:8px 12px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:15px; font-weight:bold; outline:none; box-sizing:border-box;">
-                        <div style="font-size:10px; color:var(--text-muted); margin-top:6px; line-height:1.3;">
-                            Minimum Alpha Score required for automated execution.
-                        </div>
-                    </div>
-
-                    <!-- Input 4: Master Timeframe -->
-                    <div style="background:var(--chip-bg); padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <label style="font-size:12px; font-weight:bold; color:#ab47bc; text-transform:uppercase; letter-spacing:0.5px;">
-                                ⏱️ Master Timeframe
-                            </label>
-                            <span style="font-size:10px; color:var(--text-muted);">Candle Interval</span>
-                        </div>
-                        <select id="master-timeframe-select" style="width:100%; background:#080b11; border:1px solid rgba(171, 71, 188, 0.5); color:#fff; padding:8px 12px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box; cursor:pointer;">
-                            <option value="1m">1m (1 Min Scalp)</option>
-                            <option value="5m">5m (5 Min Intra-day)</option>
-                            <option value="15m" selected>15m (15 Min Standard)</option>
-                            <option value="1h">1h (1 Hour Swing)</option>
-                            <option value="4h">4h (4 Hour Trend)</option>
-                            <option value="1D">1D (1 Day Macro)</option>
-                            <option value="5Y">5Y (5 Year Multi-Year)</option>
-                        </select>
-                        <div style="font-size:10px; color:var(--text-muted); margin-top:6px; line-height:1.3;">
-                            Primary timeframe for live data feeds, indicators, and backtests.
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Range Slider for Threshold -->
-                <div style="background:var(--chip-bg); padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid rgba(255,255,255,0.05);">
-                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:4px;">
-                        <span>Gate 3 Threshold Slider:</span>
-                        <span id="active-threshold-disp-slider" style="color:var(--accent-green-bright); font-weight:bold;">70.0</span>
-                    </div>
-                    <div class="range-container">
-                        <input type="range" min="0.0" max="100.0" step="0.5" value="70.0" class="range-input" id="threshold-slider" oninput="onThresholdSlide(this.value)">
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:4px;">
-                        <span>0.0 (Permissive)</span>
-                        <span>50.0 (Aggressive)</span>
-                        <span>70.0 (Balanced)</span>
-                        <span>90.0 (Strict)</span>
-                    </div>
-                </div>
-
-                <!-- Master Action Controls -->
-                <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.3); padding:12px 16px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);">
-                    <div style="font-size:11px; color:var(--text-muted); max-width:550px; line-height:1.4;">
-                        🤖 <b style="color:#ffffff;">Auto-Execution Protocol:</b> Background loop evaluates top candidates using these saved risk parameters (Size, Leverage, Threshold), with AI calculating dynamic Entry, SL, TP, & Score.
-                    </div>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button class="btn" id="btn-save-master-settings" onclick="saveMasterSettings()" style="padding:10px 22px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #00f090, #00b86b); border:1px solid rgba(255,255,255,0.2); color:#000000; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(0, 240, 144, 0.3); transition:all 0.2s ease;">
-                            ⚡ Save & Start Bot / Update Settings
+                    <!-- Mode Switcher Sub-Tabs -->
+                    <div style="display:flex; gap:8px; align-items:center; background:rgba(0,0,0,0.4); padding:4px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                        <button id="tab-btn-crypto-cfg" onclick="switchMasterSettingsTab('CRYPTO')" style="padding:6px 14px; font-size:12px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; background:linear-gradient(135deg, #00f090, #00b86b); color:#000; transition:all 0.2s ease;">
+                            🪙 Option 1: Crypto Futures
+                        </button>
+                        <button id="tab-btn-forex-cfg" onclick="switchMasterSettingsTab('FOREX')" style="padding:6px 14px; font-size:12px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; background:rgba(255,255,255,0.08); color:var(--text-muted); transition:all 0.2s ease;">
+                            🌐 Option 2: Forex Majors
                         </button>
                     </div>
                 </div>
 
+                <!-- Panel 1: Crypto Futures Master Settings -->
+                <div id="panel-crypto-settings" style="display:block; margin-top:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0, 240, 144, 0.08); padding:8px 12px; border-radius:6px; border:1px solid rgba(0, 240, 144, 0.25); margin-bottom:14px;">
+                        <span style="font-size:12px; font-weight:bold; color:var(--accent-green-bright); display:flex; align-items:center; gap:6px;">
+                            🪙 Option 1: Crypto Futures Independent Configuration
+                        </span>
+                        <span id="crypto-bot-status-badge" style="font-size:11px; font-weight:bold; padding:4px 10px; border-radius:12px; background:rgba(255, 82, 82, 0.2); color:#ff5252; border:1px solid rgba(255, 82, 82, 0.4);">
+                            🔴 CRYPTO BOT STOPPED
+                        </span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+                        <!-- Crypto Margin -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:var(--accent-yellow); text-transform:uppercase; display:block; margin-bottom:6px;">
+                                💵 Margin / Size (USDT)
+                            </label>
+                            <input type="number" id="crypto-position-size-input" min="10" max="50000" step="10" value="300" style="width:100%; background:#080b11; border:1px solid rgba(242, 169, 0, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Crypto Leverage -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:#64b5f6; text-transform:uppercase; display:block; margin-bottom:6px;">
+                                ⚡ Default Leverage
+                            </label>
+                            <input type="number" id="crypto-leverage-input" min="1" max="125" step="1" value="10" style="width:100%; background:#080b11; border:1px solid rgba(100, 181, 246, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Crypto Threshold -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <label style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); text-transform:uppercase;">
+                                    🎯 Score Threshold
+                                </label>
+                                <span id="crypto-threshold-disp" style="color:var(--accent-yellow); font-size:12px; font-family:'Roboto Mono', monospace; font-weight:bold;">70.0</span>
+                            </div>
+                            <input type="number" id="crypto-threshold-num-input" min="0" max="100" step="0.5" value="70.0" oninput="onCryptoThresholdChange(this.value)" style="width:100%; background:#080b11; border:1px solid rgba(0, 240, 144, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Crypto Timeframe -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:#ab47bc; text-transform:uppercase; display:block; margin-bottom:6px;">
+                                ⏱️ Master Timeframe
+                            </label>
+                            <select id="crypto-timeframe-select" style="width:100%; background:#080b11; border:1px solid rgba(171, 71, 188, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:13px; font-weight:bold; outline:none; box-sizing:border-box; cursor:pointer;">
+                                <option value="1m">1m (Scalp)</option>
+                                <option value="5m">5m (Intra-day)</option>
+                                <option value="15m" selected>15m (Standard)</option>
+                                <option value="1h">1h (Swing)</option>
+                                <option value="4h">4h (Trend)</option>
+                                <option value="1D">1D (Macro)</option>
+                            </select>
+                        </div>
+
+                        <!-- Crypto Stop Loss -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:#ff5252; text-transform:uppercase; display:block; margin-bottom:6px;">
+                                🛑 Stop Loss (%)
+                            </label>
+                            <input type="number" id="crypto-sl-input" min="0.1" max="50" step="0.1" value="3.5" style="width:100%; background:#080b11; border:1px solid rgba(255, 82, 82, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Crypto Take Profit -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); text-transform:uppercase; display:block; margin-bottom:6px;">
+                                🎯 Take Profit (%)
+                            </label>
+                            <input type="number" id="crypto-tp-input" min="0.1" max="100" step="0.1" value="5.5" style="width:100%; background:#080b11; border:1px solid rgba(0, 240, 144, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+                    </div>
+
+                    <!-- Crypto Threshold Slider -->
+                    <div style="background:var(--chip-bg); padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:4px;">
+                            <span>Crypto Threshold Slider:</span>
+                            <span id="crypto-threshold-slider-disp" style="color:var(--accent-green-bright); font-weight:bold;">70.0</span>
+                        </div>
+                        <div class="range-container">
+                            <input type="range" min="0.0" max="100.0" step="0.5" value="70.0" class="range-input" id="crypto-threshold-slider" oninput="onCryptoThresholdSlide(this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Crypto Standalone Action Buttons -->
+                    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.3); padding:12px 16px; border-radius:6px; border:1px solid rgba(0, 240, 144, 0.2);">
+                        <div style="font-size:11px; color:var(--text-muted); max-width:480px; line-height:1.4;">
+                            🪙 <b style="color:#ffffff;">Crypto Futures Engine:</b> Saves Option 1 parameters exclusively to the Crypto engine with integrated start and stop execution controls.
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <button class="btn" id="btn-save-start-crypto" onclick="saveAndStartBot('CRYPTO')" style="padding:10px 20px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #00f090, #00b86b); border:1px solid rgba(255,255,255,0.2); color:#000000; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(0, 240, 144, 0.3); transition:all 0.2s ease;">
+                                ⚡ Save & Start (Crypto)
+                            </button>
+                            <button class="btn" id="btn-stop-crypto" onclick="stopBot('CRYPTO')" style="padding:10px 18px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #ff5252, #d32f2f); border:1px solid rgba(255,255,255,0.2); color:#ffffff; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(255, 82, 82, 0.3); transition:all 0.2s ease;">
+                                🛑 Stop Crypto Bot
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Forex Majors Master Settings -->
+                <div id="panel-forex-settings" style="display:none; margin-top:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(100, 181, 246, 0.08); padding:8px 12px; border-radius:6px; border:1px solid rgba(100, 181, 246, 0.25); margin-bottom:14px;">
+                        <span style="font-size:12px; font-weight:bold; color:#64b5f6; display:flex; align-items:center; gap:6px;">
+                            🌐 Option 2: Forex Majors Independent Configuration
+                        </span>
+                        <span id="forex-bot-status-badge" style="font-size:11px; font-weight:bold; padding:4px 10px; border-radius:12px; background:rgba(255, 82, 82, 0.2); color:#ff5252; border:1px solid rgba(255, 82, 82, 0.4);">
+                            🔴 FOREX BOT STOPPED
+                        </span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+                        <!-- Forex Margin -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:var(--accent-yellow); text-transform:uppercase; display:block; margin-bottom:6px;">
+                                💵 Margin / Size (USD)
+                            </label>
+                            <input type="number" id="forex-position-size-input" min="10" max="50000" step="10" value="500" style="width:100%; background:#080b11; border:1px solid rgba(242, 169, 0, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Forex Leverage -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:#64b5f6; text-transform:uppercase; display:block; margin-bottom:6px;">
+                                ⚡ Default Leverage
+                            </label>
+                            <input type="number" id="forex-leverage-input" min="1" max="500" step="1" value="20" style="width:100%; background:#080b11; border:1px solid rgba(100, 181, 246, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Forex Threshold -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <label style="font-size:11px; font-weight:bold; color:#64b5f6; text-transform:uppercase;">
+                                    🎯 Score Threshold
+                                </label>
+                                <span id="forex-threshold-disp" style="color:var(--accent-yellow); font-size:12px; font-family:'Roboto Mono', monospace; font-weight:bold;">65.0</span>
+                            </div>
+                            <input type="number" id="forex-threshold-num-input" min="0" max="100" step="0.5" value="65.0" oninput="onForexThresholdChange(this.value)" style="width:100%; background:#080b11; border:1px solid rgba(100, 181, 246, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Forex Timeframe -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:#ab47bc; text-transform:uppercase; display:block; margin-bottom:6px;">
+                                ⏱️ Master Timeframe
+                            </label>
+                            <select id="forex-timeframe-select" style="width:100%; background:#080b11; border:1px solid rgba(171, 71, 188, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:13px; font-weight:bold; outline:none; box-sizing:border-box; cursor:pointer;">
+                                <option value="1m">1m (Scalp)</option>
+                                <option value="5m">5m (Intra-day)</option>
+                                <option value="15m" selected>15m (Standard)</option>
+                                <option value="1h">1h (Swing)</option>
+                                <option value="4h">4h (Trend)</option>
+                                <option value="1D">1D (Macro)</option>
+                            </select>
+                        </div>
+
+                        <!-- Forex Stop Loss -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:#ff5252; text-transform:uppercase; display:block; margin-bottom:6px;">
+                                🛑 Stop Loss (%)
+                            </label>
+                            <input type="number" id="forex-sl-input" min="0.1" max="50" step="0.1" value="1.0" style="width:100%; background:#080b11; border:1px solid rgba(255, 82, 82, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Forex Take Profit -->
+                        <div style="background:var(--chip-bg); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <label style="font-size:11px; font-weight:bold; color:var(--accent-green-bright); text-transform:uppercase; display:block; margin-bottom:6px;">
+                                🎯 Take Profit (%)
+                            </label>
+                            <input type="number" id="forex-tp-input" min="0.1" max="100" step="0.1" value="2.0" style="width:100%; background:#080b11; border:1px solid rgba(0, 240, 144, 0.5); color:#fff; padding:8px; border-radius:6px; font-family:'Roboto Mono', monospace; font-size:14px; font-weight:bold; outline:none; box-sizing:border-box;">
+                        </div>
+                    </div>
+
+                    <!-- Forex Threshold Slider -->
+                    <div style="background:var(--chip-bg); padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:4px;">
+                            <span>Forex Threshold Slider:</span>
+                            <span id="forex-threshold-slider-disp" style="color:#64b5f6; font-weight:bold;">65.0</span>
+                        </div>
+                        <div class="range-container">
+                            <input type="range" min="0.0" max="100.0" step="0.5" value="65.0" class="range-input" id="forex-threshold-slider" oninput="onForexThresholdSlide(this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Forex Standalone Action Buttons -->
+                    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.3); padding:12px 16px; border-radius:6px; border:1px solid rgba(100, 181, 246, 0.2);">
+                        <div style="font-size:11px; color:var(--text-muted); max-width:480px; line-height:1.4;">
+                            🌐 <b style="color:#ffffff;">Forex Majors Engine:</b> Saves Option 2 parameters exclusively to the Forex engine with integrated start and stop execution controls.
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <button class="btn" id="btn-save-start-forex" onclick="saveAndStartBot('FOREX')" style="padding:10px 20px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #64b5f6, #1e88e5); border:1px solid rgba(255,255,255,0.2); color:#ffffff; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(100, 181, 246, 0.3); transition:all 0.2s ease;">
+                                ⚡ Save & Start (Forex)
+                            </button>
+                            <button class="btn" id="btn-stop-forex" onclick="stopBot('FOREX')" style="padding:10px 18px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #ff5252, #d32f2f); border:1px solid rgba(255,255,255,0.2); color:#ffffff; border-radius:6px; cursor:pointer; box-shadow:0 4px 16px rgba(255, 82, 82, 0.3); transition:all 0.2s ease;">
+                                🛑 Stop Forex Bot
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="master-settings-toast" style="display:none; margin-top:12px; padding:10px 14px; border-radius:6px; font-size:12px; font-weight:bold; text-align:center; transition:all 0.3s ease;"></div>
-                <div id="threshold-status-msg" style="display:none; margin-top:8px; padding:8px 10px; border-radius:4px; font-size:11px; font-weight:bold;"></div>
             </div>
 
         <!-- Strategy Testing & Simulation Suite Card -->
@@ -1564,7 +1668,6 @@
                                     <th>Score</th>
                                     <th>Dir</th>
                                     <th>Gate Status</th>
-                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="candidates-table-body">
@@ -1930,6 +2033,10 @@
             if (liveData.active_provider) {
                 const elem = document.getElementById('identity-active_provider');
                 if (elem) elem.innerText = liveData.active_provider;
+            }
+
+            if (liveData.candles_readiness) {
+                renderCandleReadiness(liveData.candles_readiness);
             }
 
             // Stream Logs Rendering & Instant Placeholder Removal
@@ -2393,11 +2500,6 @@
                                 <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
                                 <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
                                 <td>${statusBadge}</td>
-                                <td>
-                                    <button class="btn" style="padding:2px 8px; font-size:10px; background:linear-gradient(135deg, #00f090, #089981); color:#000; font-weight:bold; border:none; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); executeTradeForPair('${c.symbol}', '${c.direction}', ${px}, ${c.sl}, ${c.tp}, ${c.score});">
-                                        ⚡ Trade
-                                    </button>
-                                </td>
                             </tr>
                         `;
                     }).join('');
@@ -2837,6 +2939,9 @@
             const streamGrid = document.getElementById('stream-grid');
             if (streamGrid) streamGrid.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:16px;">Scanning live tickers for ${targetMode}...</div>`;
 
+            const candleBody = document.getElementById('candle-readiness-body');
+            if (candleBody) candleBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Fetching candle diagnostics for ${targetMode}...</td></tr>`;
+
             const topCandElem = document.getElementById('top-candidate-name');
             if (topCandElem) topCandElem.innerText = targetMode === 'FOREX' ? 'EURUSD=X' : 'BTCUSDT';
             const topScoreElem = document.getElementById('top-candidate-score');
@@ -2857,6 +2962,14 @@
                 if (data && data.status === 'success') {
                     if (data.live_data) latestLiveData = data.live_data;
                     if (data.bot_state) currentBotState = data.bot_state;
+                    if (data.candles_readiness) {
+                        renderCandleReadiness(data.candles_readiness);
+                    } else if (data.live_data && data.live_data.candles_readiness) {
+                        renderCandleReadiness(data.live_data.candles_readiness);
+                    }
+                    if (data.live_data) {
+                        processLiveDataPayload(data.live_data);
+                    }
                 }
             } catch (e) {
                 console.error('Error switching market mode:', e);
@@ -2955,11 +3068,6 @@
                                 <td style="color:var(--accent-yellow); font-weight:bold;">${c.score}</td>
                                 <td><span class="${c.direction === 'LONG' ? 'badge-long' : 'badge-short'}">${c.direction}</span></td>
                                 <td>${statusBadge}</td>
-                                <td>
-                                    <button class="btn" style="padding:2px 8px; font-size:10px; background:linear-gradient(135deg, #00f090, #089981); color:#000; font-weight:bold; border:none; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); executeTradeForPair('${c.symbol}', '${c.direction}', ${px}, ${c.sl}, ${c.tp}, ${c.score});">
-                                        ⚡ Trade
-                                    </button>
-                                </td>
                             </tr>
                         `;
                     }).join('');
@@ -2971,59 +3079,184 @@
             }
         }
 
-        function onThresholdSlide(val) {
-            const num = parseFloat(val) || 0.0;
-            const numInput = document.getElementById('threshold-num-input');
-            if (numInput && document.activeElement !== numInput) numInput.value = num;
-            const slider = document.getElementById('threshold-slider');
-            if (slider && document.activeElement !== slider) slider.value = num;
-            updateThresholdUIDisplay(num);
+        function switchMasterSettingsTab(mode) {
+            const cryptoBtn = document.getElementById('tab-btn-crypto-cfg');
+            const forexBtn = document.getElementById('tab-btn-forex-cfg');
+            const cryptoPanel = document.getElementById('panel-crypto-settings');
+            const forexPanel = document.getElementById('panel-forex-settings');
+
+            if (mode === 'FOREX') {
+                if (cryptoBtn) {
+                    cryptoBtn.style.background = 'rgba(255,255,255,0.08)';
+                    cryptoBtn.style.color = 'var(--text-muted)';
+                }
+                if (forexBtn) {
+                    forexBtn.style.background = 'linear-gradient(135deg, #64b5f6, #1e88e5)';
+                    forexBtn.style.color = '#ffffff';
+                }
+                if (cryptoPanel) cryptoPanel.style.display = 'none';
+                if (forexPanel) forexPanel.style.display = 'block';
+            } else {
+                if (cryptoBtn) {
+                    cryptoBtn.style.background = 'linear-gradient(135deg, #00f090, #00b86b)';
+                    cryptoBtn.style.color = '#000000';
+                }
+                if (forexBtn) {
+                    forexBtn.style.background = 'rgba(255,255,255,0.08)';
+                    forexBtn.style.color = 'var(--text-muted)';
+                }
+                if (cryptoPanel) cryptoPanel.style.display = 'block';
+                if (forexPanel) forexPanel.style.display = 'none';
+            }
         }
 
-        function onThresholdNumChange(val) {
-            const num = Math.max(0, Math.min(100, parseFloat(val) || 0.0));
-            const numInput = document.getElementById('threshold-num-input');
+        function onCryptoThresholdSlide(val) {
+            const num = parseFloat(val) || 0.0;
+            const numInput = document.getElementById('crypto-threshold-num-input');
             if (numInput && document.activeElement !== numInput) numInput.value = num;
-            const slider = document.getElementById('threshold-slider');
+            const disp = document.getElementById('crypto-threshold-disp');
+            if (disp) disp.innerText = num.toFixed(1);
+            const dispSlider = document.getElementById('crypto-threshold-slider-disp');
+            if (dispSlider) dispSlider.innerText = num.toFixed(1);
+        }
+
+        function onCryptoThresholdChange(val) {
+            const num = Math.max(0, Math.min(100, parseFloat(val) || 0.0));
+            const slider = document.getElementById('crypto-threshold-slider');
             if (slider && document.activeElement !== slider) slider.value = num;
-            updateThresholdUIDisplay(num);
+            const disp = document.getElementById('crypto-threshold-disp');
+            if (disp) disp.innerText = num.toFixed(1);
+            const dispSlider = document.getElementById('crypto-threshold-slider-disp');
+            if (dispSlider) dispSlider.innerText = num.toFixed(1);
+        }
+
+        function onForexThresholdSlide(val) {
+            const num = parseFloat(val) || 0.0;
+            const numInput = document.getElementById('forex-threshold-num-input');
+            if (numInput && document.activeElement !== numInput) numInput.value = num;
+            const disp = document.getElementById('forex-threshold-disp');
+            if (disp) disp.innerText = num.toFixed(1);
+            const dispSlider = document.getElementById('forex-threshold-slider-disp');
+            if (dispSlider) dispSlider.innerText = num.toFixed(1);
+        }
+
+        function onForexThresholdChange(val) {
+            const num = Math.max(0, Math.min(100, parseFloat(val) || 0.0));
+            const slider = document.getElementById('forex-threshold-slider');
+            if (slider && document.activeElement !== slider) slider.value = num;
+            const disp = document.getElementById('forex-threshold-disp');
+            if (disp) disp.innerText = num.toFixed(1);
+            const dispSlider = document.getElementById('forex-threshold-slider-disp');
+            if (dispSlider) dispSlider.innerText = num.toFixed(1);
         }
 
         function applyMasterSettingsToUI(ms) {
             if (!ms) return;
-            const posInput = document.getElementById('master-position-size-input');
-            if (posInput && document.activeElement !== posInput) {
-                posInput.value = ms.position_size !== undefined ? ms.position_size : 300.0;
+
+            const cryptoCfg = ms.crypto || ms.crypto_settings || ms;
+            const forexCfg = ms.forex || ms.forex_settings || ms;
+
+            // Crypto UI Population
+            const cPos = document.getElementById('crypto-position-size-input');
+            if (cPos && document.activeElement !== cPos && cryptoCfg.position_size !== undefined) {
+                cPos.value = cryptoCfg.position_size;
             }
-            const levInput = document.getElementById('master-leverage-input');
-            if (levInput && document.activeElement !== levInput) {
-                levInput.value = ms.leverage !== undefined ? ms.leverage : 10;
+            const cLev = document.getElementById('crypto-leverage-input');
+            if (cLev && document.activeElement !== cLev && cryptoCfg.leverage !== undefined) {
+                cLev.value = cryptoCfg.leverage;
             }
-            if (ms.timeframe) {
-                const tfSelect = document.getElementById('master-timeframe-select');
-                if (tfSelect && document.activeElement !== tfSelect) tfSelect.value = ms.timeframe;
-                const simTfSelect = document.getElementById('sim-timeframe-select');
-                if (simTfSelect && document.activeElement !== simTfSelect) simTfSelect.value = ms.timeframe;
+            const cTf = document.getElementById('crypto-timeframe-select');
+            if (cTf && document.activeElement !== cTf && cryptoCfg.timeframe) {
+                cTf.value = cryptoCfg.timeframe;
             }
-            if (ms.score_threshold !== undefined) {
-                onThresholdSlide(ms.score_threshold);
+            const cSl = document.getElementById('crypto-sl-input');
+            if (cSl && document.activeElement !== cSl && cryptoCfg.stop_loss_pct !== undefined) {
+                cSl.value = cryptoCfg.stop_loss_pct;
+            }
+            const cTp = document.getElementById('crypto-tp-input');
+            if (cTp && document.activeElement !== cTp && cryptoCfg.take_profit_pct !== undefined) {
+                cTp.value = cryptoCfg.take_profit_pct;
+            }
+            if (cryptoCfg.score_threshold !== undefined) {
+                onCryptoThresholdSlide(cryptoCfg.score_threshold);
+            }
+
+            // Crypto Badge Status
+            const cBadge = document.getElementById('crypto-bot-status-badge');
+            if (cBadge) {
+                if (cryptoCfg.is_running) {
+                    cBadge.innerHTML = '🟢 CRYPTO BOT ACTIVE';
+                    cBadge.style.background = 'rgba(0, 240, 144, 0.2)';
+                    cBadge.style.color = 'var(--accent-green-bright)';
+                    cBadge.style.border = '1px solid rgba(0, 240, 144, 0.4)';
+                } else {
+                    cBadge.innerHTML = '🔴 CRYPTO BOT STOPPED';
+                    cBadge.style.background = 'rgba(255, 82, 82, 0.2)';
+                    cBadge.style.color = '#ff5252';
+                    cBadge.style.border = '1px solid rgba(255, 82, 82, 0.4)';
+                }
+            }
+
+            // Forex UI Population
+            const fPos = document.getElementById('forex-position-size-input');
+            if (fPos && document.activeElement !== fPos && forexCfg.position_size !== undefined) {
+                fPos.value = forexCfg.position_size;
+            }
+            const fLev = document.getElementById('forex-leverage-input');
+            if (fLev && document.activeElement !== fLev && forexCfg.leverage !== undefined) {
+                fLev.value = forexCfg.leverage;
+            }
+            const fTf = document.getElementById('forex-timeframe-select');
+            if (fTf && document.activeElement !== fTf && forexCfg.timeframe) {
+                fTf.value = forexCfg.timeframe;
+            }
+            const fSl = document.getElementById('forex-sl-input');
+            if (fSl && document.activeElement !== fSl && forexCfg.stop_loss_pct !== undefined) {
+                fSl.value = forexCfg.stop_loss_pct;
+            }
+            const fTp = document.getElementById('forex-tp-input');
+            if (fTp && document.activeElement !== fTp && forexCfg.take_profit_pct !== undefined) {
+                fTp.value = forexCfg.take_profit_pct;
+            }
+            if (forexCfg.score_threshold !== undefined) {
+                onForexThresholdSlide(forexCfg.score_threshold);
+            }
+
+            // Forex Badge Status
+            const fBadge = document.getElementById('forex-bot-status-badge');
+            if (fBadge) {
+                if (forexCfg.is_running) {
+                    fBadge.innerHTML = '🟢 FOREX BOT ACTIVE';
+                    fBadge.style.background = 'rgba(100, 181, 246, 0.2)';
+                    fBadge.style.color = '#64b5f6';
+                    fBadge.style.border = '1px solid rgba(100, 181, 246, 0.4)';
+                } else {
+                    fBadge.innerHTML = '🔴 FOREX BOT STOPPED';
+                    fBadge.style.background = 'rgba(255, 82, 82, 0.2)';
+                    fBadge.style.color = '#ff5252';
+                    fBadge.style.border = '1px solid rgba(255, 82, 82, 0.4)';
+                }
             }
         }
 
-        async function saveMasterSettings() {
-            const posInput = document.getElementById('master-position-size-input');
-            const levInput = document.getElementById('master-leverage-input');
-            const tfSelect = document.getElementById('master-timeframe-select');
-            const threshInput = document.getElementById('threshold-num-input');
-            const threshSlider = document.getElementById('threshold-slider');
+        async function saveAndStartBot(mode) {
+            const isFx = (mode === 'FOREX');
+            const posInput = document.getElementById(isFx ? 'forex-position-size-input' : 'crypto-position-size-input');
+            const levInput = document.getElementById(isFx ? 'forex-leverage-input' : 'crypto-leverage-input');
+            const tfSelect = document.getElementById(isFx ? 'forex-timeframe-select' : 'crypto-timeframe-select');
+            const threshInput = document.getElementById(isFx ? 'forex-threshold-num-input' : 'crypto-threshold-num-input');
+            const slInput = document.getElementById(isFx ? 'forex-sl-input' : 'crypto-sl-input');
+            const tpInput = document.getElementById(isFx ? 'forex-tp-input' : 'crypto-tp-input');
 
-            const posSize = posInput ? (parseFloat(posInput.value) || 300.0) : 300.0;
-            const lev = levInput ? (parseInt(levInput.value) || 10) : 10;
+            const posSize = posInput ? (parseFloat(posInput.value) || (isFx ? 500.0 : 300.0)) : (isFx ? 500.0 : 300.0);
+            const lev = levInput ? (parseInt(levInput.value) || (isFx ? 20 : 10)) : (isFx ? 20 : 10);
             const tf = tfSelect ? tfSelect.value : '15m';
-            const thresh = threshInput ? parseFloat(threshInput.value) : (threshSlider ? parseFloat(threshSlider.value) : 70.0);
+            const thresh = threshInput ? parseFloat(threshInput.value) : (isFx ? 65.0 : 70.0);
+            const sl = slInput ? parseFloat(slInput.value) : (isFx ? 1.0 : 3.5);
+            const tp = tpInput ? parseFloat(tpInput.value) : (isFx ? 2.0 : 5.5);
 
-            const btn = document.getElementById('btn-save-master-settings');
-            if (btn) btn.innerText = '⌛ Saving & Updating Master Risk Settings...';
+            const btn = document.getElementById(isFx ? 'btn-save-start-forex' : 'btn-save-start-crypto');
+            if (btn) btn.innerText = `⌛ Starting ${mode} Bot...`;
 
             const toast = document.getElementById('master-settings-toast');
 
@@ -3032,10 +3265,67 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
+                        market_mode: mode,
                         position_size: posSize,
                         leverage: lev,
                         score_threshold: thresh,
-                        timeframe: tf
+                        timeframe: tf,
+                        stop_loss_pct: sl,
+                        take_profit_pct: tp,
+                        is_running: true
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.status === 'success') {
+                    const ms = data.master_settings || {};
+                    applyMasterSettingsToUI(ms);
+
+                    // Switch active market mode to match launched bot
+                    if (activeMarketMode !== mode) {
+                        setMarketMode(mode);
+                    }
+
+                    if (toast) {
+                        toast.style.display = 'block';
+                        toast.style.background = isFx ? 'rgba(100, 181, 246, 0.15)' : 'rgba(0, 240, 144, 0.15)';
+                        toast.style.border = isFx ? '1px solid rgba(100, 181, 246, 0.4)' : '1px solid rgba(0, 240, 144, 0.4)';
+                        toast.style.color = isFx ? '#64b5f6' : 'var(--accent-green-bright)';
+                        toast.innerText = `⚡ ${mode} Auto-Execution Engine STARTED! Settings Persisted: Margin $${posSize} | Leverage ${lev}x | Threshold ${thresh} | SL ${sl}% | TP ${tp}%`;
+                        setTimeout(() => { toast.style.display = 'none'; }, 4500);
+                    }
+                } else {
+                    if (toast) {
+                        toast.style.display = 'block';
+                        toast.style.background = 'rgba(255, 82, 82, 0.15)';
+                        toast.style.border = '1px solid rgba(255, 82, 82, 0.4)';
+                        toast.style.color = 'var(--accent-red)';
+                        toast.innerText = `❌ Error starting ${mode} bot: ${data.detail || 'Failed to save settings'}`;
+                        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+                    }
+                }
+            } catch(e) {
+                console.error(`Error starting ${mode} bot:`, e);
+            } finally {
+                if (btn) btn.innerText = isFx ? '⚡ Save & Start (Forex)' : '⚡ Save & Start (Crypto)';
+                fetchLiveData();
+            }
+        }
+
+        async function stopBot(mode) {
+            const isFx = (mode === 'FOREX');
+            const btn = document.getElementById(isFx ? 'btn-stop-forex' : 'btn-stop-crypto');
+            if (btn) btn.innerText = `⌛ Stopping ${mode} Bot...`;
+
+            const toast = document.getElementById('master-settings-toast');
+
+            try {
+                const res = await fetch('/api/settings/master', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        market_mode: mode,
+                        is_running: false
                     })
                 });
                 const data = await res.json();
@@ -3046,35 +3336,18 @@
 
                     if (toast) {
                         toast.style.display = 'block';
-                        toast.style.background = 'rgba(0, 240, 144, 0.15)';
-                        toast.style.border = '1px solid rgba(0, 240, 144, 0.4)';
-                        toast.style.color = 'var(--accent-green-bright)';
-                        toast.innerText = `✅ Master Settings Persisted! Margin: $${ms.position_size} USDT | Leverage: ${ms.leverage}x | Threshold: ${ms.score_threshold} | Timeframe: ${ms.timeframe}`;
-                        setTimeout(() => { toast.style.display = 'none'; }, 4000);
-                    }
-                } else {
-                    if (toast) {
-                        toast.style.display = 'block';
                         toast.style.background = 'rgba(255, 82, 82, 0.15)';
                         toast.style.border = '1px solid rgba(255, 82, 82, 0.4)';
-                        toast.style.color = 'var(--accent-red)';
-                        toast.innerText = `❌ Error: ${data.detail || 'Failed to save settings'}`;
+                        toast.style.color = '#ff5252';
+                        toast.innerText = `🛑 ${mode} Auto-Execution Engine STOPPED.`;
                         setTimeout(() => { toast.style.display = 'none'; }, 4000);
                     }
                 }
             } catch(e) {
-                console.error('Error saving master settings:', e);
-                if (toast) {
-                    toast.style.display = 'block';
-                    toast.style.background = 'rgba(255, 82, 82, 0.15)';
-                    toast.style.border = '1px solid rgba(255, 82, 82, 0.4)';
-                    toast.style.color = 'var(--accent-red)';
-                    toast.innerText = `❌ Network Error saving master settings`;
-                    setTimeout(() => { toast.style.display = 'none'; }, 4000);
-                }
+                console.error(`Error stopping ${mode} bot:`, e);
             } finally {
-                if (btn) btn.innerText = '⚡ Save & Start Bot / Update Settings';
-                fetchState();
+                if (btn) btn.innerText = isFx ? '🛑 Stop Forex Bot' : '🛑 Stop Crypto Bot';
+                fetchLiveData();
             }
         }
 
@@ -4775,7 +5048,10 @@
         window.triggerBootstrapRetry = typeof triggerBootstrapRetry !== 'undefined' ? triggerBootstrapRetry : function() { fetch('/api/bootstrap/retry', {method: 'POST'}).then(r => r.json()).then(d => console.log(d)).catch(e => console.error(e)); };
         window.triggerDataReset = typeof triggerDataReset !== 'undefined' ? triggerDataReset : function() { fetch('/api/data/reset', {method: 'POST'}).then(r => r.json()).then(d => console.log(d)).catch(e => console.error(e)); };
         window.runBacktestSimulation = typeof runBacktestSimulation !== 'undefined' ? runBacktestSimulation : function(e) { fetch('/api/backtest/run', {method: 'POST'}).then(r => r.json()).then(d => console.log(d)).catch(e => console.error(e)); };
-        window.saveMasterSettings = typeof saveMasterSettings !== 'undefined' ? saveMasterSettings : function() { console.log('Master settings saved'); };
+        window.saveAndStartBot = typeof saveAndStartBot !== 'undefined' ? saveAndStartBot : function(mode) { console.log('saveAndStartBot', mode); };
+        window.stopBot = typeof stopBot !== 'undefined' ? stopBot : function(mode) { console.log('stopBot', mode); };
+        window.switchMasterSettingsTab = typeof switchMasterSettingsTab !== 'undefined' ? switchMasterSettingsTab : function(mode) { console.log('switchMasterSettingsTab', mode); };
+        window.saveMasterSettings = typeof saveAndStartBot !== 'undefined' ? function() { saveAndStartBot(activeMarketMode || 'CRYPTO'); } : function() { console.log('Master settings saved'); };
 
         if (typeof applyAIOptimalParameters !== 'undefined') window.applyAIOptimalParameters = applyAIOptimalParameters;
         if (typeof clearFullscreenLogs !== 'undefined') window.clearFullscreenLogs = clearFullscreenLogs;

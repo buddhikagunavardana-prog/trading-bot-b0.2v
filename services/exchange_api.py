@@ -585,9 +585,13 @@ async def _fetch_live_market_data_internal():
         # Multi-Pair Fetching & Real Technical Indicator Calculations
         engine = AlphaEngine()
         raw_results = []
-        master_settings = paper_trade_manager.get_master_settings()
-        threshold = float(master_settings.get("score_threshold", bot_state.get("score_threshold", bot_state.get("threshold", 70.0))))
+        master_settings = paper_trade_manager.get_master_settings(market_mode=market_mode)
+        threshold = float(master_settings.get("score_threshold", 70.0 if market_mode == "CRYPTO" else 65.0))
         active_tf = str(master_settings.get("timeframe", "15m"))
+        is_running = bool(master_settings.get("is_running", False))
+        custom_sl_pct = float(master_settings.get("stop_loss_pct", 3.5 if market_mode == "CRYPTO" else 1.0)) / 100.0
+        custom_tp_pct = float(master_settings.get("take_profit_pct", 5.5 if market_mode == "CRYPTO" else 2.0)) / 100.0
+
         bot_state["threshold"] = threshold
         bot_state["score_threshold"] = threshold
 
@@ -630,12 +634,12 @@ async def _fetch_live_market_data_internal():
 
             if market_mode == "FOREX":
                 prec = 2 if "JPY" in sym else 4
-                sl_pct = 0.003 if direction == "LONG" else 0.0025
-                tp_pct = 0.007 if direction == "LONG" else 0.006
+                sl_pct = custom_sl_pct if custom_sl_pct > 0 else 0.01
+                tp_pct = custom_tp_pct if custom_tp_pct > 0 else 0.02
             else:
                 prec = 4 if price < 1.0 else (2 if price > 100 else 3)
-                sl_pct = 0.035 if direction == "LONG" else 0.025
-                tp_pct = 0.085 if direction == "LONG" else 0.065
+                sl_pct = custom_sl_pct if custom_sl_pct > 0 else 0.035
+                tp_pct = custom_tp_pct if custom_tp_pct > 0 else 0.055
 
             if direction == "LONG":
                 proposed_sl = round(price * (1.0 - sl_pct), prec)
@@ -697,6 +701,32 @@ async def _fetch_live_market_data_internal():
             else:
                 live_data["stream_logs"].append(f"[{now_str}] GATE_BLOCKED: {item['symbol']} ({item['direction']}) score {item['score']} below threshold {threshold}")
 
+    # 100% Automated Trade Execution Engine based on Master Settings
+    if is_running and raw_results:
+        lev_val = int(master_settings.get("leverage", 10 if market_mode == "CRYPTO" else 20))
+        pos_size_val = float(master_settings.get("position_size", 300.0 if market_mode == "CRYPTO" else 500.0))
+        for item in raw_results:
+            if item["gate"] == "PASS" and item["score"] >= threshold and item["symbol"] not in paper_trade_manager.active_positions:
+                placed_pos = paper_trade_manager.open_position(
+                    symbol=item["symbol"],
+                    side=item["direction"],
+                    entry_price=item["price"],
+                    sl=item["sl"],
+                    tp=item["tp"],
+                    score=item["score"],
+                    leverage=lev_val,
+                    position_size_usdt=pos_size_val,
+                    rsi_entry=item.get("rsi_15m", 50.0),
+                    sma50_entry=item.get("sma50", item["price"])
+                )
+                if placed_pos:
+                    now_str = datetime.utcnow().strftime("%H:%M:%S UTC")
+                    exec_msg = f"[{now_str}] ⚡ AUTO_EXECUTION ({market_mode}): Placed automated trade for {item['symbol']} ({item['direction']}) @ ${item['price']} | Margin: ${pos_size_val} | Lev: {lev_val}x | Score: {item['score']} >= {threshold}"
+                    bot_state["recent_logs"].append(exec_msg)
+                    if "stream_logs" in live_data and isinstance(live_data["stream_logs"], list):
+                        live_data["stream_logs"].append(exec_msg)
+                    logger.info(f"Auto-executed trade for {item['symbol']} ({market_mode})")
+
     # Update global live_data & bot_state
     if raw_results:
         top = raw_results[0]
@@ -720,7 +750,7 @@ async def _fetch_live_market_data_internal():
                 "sl": item["sl"],
                 "tp": item["tp"],
                 "rr": item["rr"],
-                "execution_status": "ORDER_PLACED" if item["symbol"] in paper_trade_manager.active_positions else ("AUTO_EXEC_READY" if item["gate"] == "PASS" and item["score"] >= threshold else "GATE_BLOCKED"),
+                "execution_status": "ORDER_PLACED" if item["symbol"] in paper_trade_manager.active_positions else (("AUTO_EXEC_READY" if is_running else "BOT_STOPPED") if item["gate"] == "PASS" and item["score"] >= threshold else "GATE_BLOCKED"),
                 "liquidity": min(99, max(80, int(item["score"] * 0.9 + 10))),
                 "flow": "HEAVY_BUY_FLOW" if item["direction"] == "LONG" else "SELL_SIDE_PRESSURE",
                 "reasons": [
@@ -851,3 +881,7 @@ async def _fetch_live_market_data_internal():
     live_data["performance_metrics"] = portfolio.get("metrics", {})
     live_data["active_positions"] = portfolio["active_positions"]
     live_data["trade_history"] = portfolio.get("trade_history", [])
+
+    readiness = paper_trade_manager.get_candle_readiness_diagnostics(market_mode=market_mode)
+    bot_state["candles_readiness"] = readiness
+    live_data["candles_readiness"] = readiness
