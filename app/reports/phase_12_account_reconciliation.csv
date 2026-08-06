@@ -1,3 +1,0 @@
-Timestamp,StartingBalance,CashBalance,UnrealisedPnL,CalculatedEquity,RealisedNetPnL,ExpectedCashBalance,ReconciliationDifference,Tolerance,Status,CorrectionLedgerEntries
-1785251120000,10000.00,10095.20,0.00,10095.20,95.20,10095.20,0.0000,0.0100,AUDIT_EXCLUSION_PENDING,0
-1785253177000,10000.00,10000.00,0.00,10000.00,0.00,10000.00,0.0000,0.0100,PASSED,1

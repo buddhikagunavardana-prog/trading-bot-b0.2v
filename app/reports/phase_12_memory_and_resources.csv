@@ -1,2 +1,0 @@
-Timestamp,HeapUsageMB,PeakHeapMB,CandleBufferCount,ObservationRepoCount,ActiveCoroutines,WebSocketConnections,DatabaseSizeKB,Status
-1785251120000,42.5,68.2,1200,2,8,1,256,BOUNDED

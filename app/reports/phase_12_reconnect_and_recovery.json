@@ -1,9 +1,0 @@
-{
-  "testName": "ProcessAndNetworkRecoveryTest",
-  "reconnectCount": 0,
-  "staleFeedIncidents": 0,
-  "databaseRecoveryPassed": true,
-  "processedEventsRestored": true,
-  "duplicatePositionsPrevented": true,
-  "telegramRecoveryAlertsDelivered": true
-}

@@ -1,2 +1,0 @@
-TradeId,OrderId,Symbol,Side,EntryPrice,ExitPrice,Amount,TotalUsdt,StopLoss,TakeProfit,ExecutionCosts,RealisedNetPnL,Status,ExitReason,ObservationEligible,PerformanceIncluded,ExclusionReason
-PAPER_001,ORD_001,BTC/USDT,BUY,60000.00,61000.00,0.1,6000.00,59000.00,62000.00,4.80,95.20,CLOSED,TAKE_PROFIT,false,false,SOURCE_EVENT_PREDATES_STABLE_LIVE_OBSERVATION_BOUNDARY

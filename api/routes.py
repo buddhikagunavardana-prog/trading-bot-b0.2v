@@ -45,23 +45,34 @@ try:
     from fastapi.templating import Jinja2Templates
     templates = Jinja2Templates(directory="templates")
 except Exception:
-    # Robust fallback when jinja2 library is not installed
-    class SimpleTemplates:
-        def __init__(self, directory: str = "templates"):
-            self.directory = Path(directory)
+    templates = None
 
-        def TemplateResponse(self, name: str, context: dict):
-            file_path = self.directory / name
-            content = file_path.read_text(encoding="utf-8")
-            if isinstance(context, dict):
-                for key, val in context.items():
-                    if key != "request":
-                        content = content.replace(f"{{{key}}}", str(val))
-                        content = content.replace(f"{{{{ {key} }}}}", str(val))
-                        content = content.replace(f"{{{{{key}}}}}", str(val))
-            return HTMLResponse(content=content)
+def render_template(name: str, context: dict) -> HTMLResponse:
+    if templates is not None:
+        try:
+            return templates.TemplateResponse(name, context)
+        except Exception:
+            try:
+                request = context.get("request")
+                if request:
+                    return templates.TemplateResponse(request=request, name=name, context=context)
+                return templates.TemplateResponse(name, context)
+            except Exception:
+                pass
 
-    templates = SimpleTemplates(directory="templates")
+    file_path = Path("templates") / name
+    if file_path.exists():
+        content = file_path.read_text(encoding="utf-8")
+    else:
+        content = "<html><body><h1>CryptoBot AI Dashboard</h1></body></html>"
+
+    if isinstance(context, dict):
+        for key, val in context.items():
+            if key != "request":
+                content = content.replace(f"{{{key}}}", str(val))
+                content = content.replace(f"{{{{ {key} }}}}", str(val))
+                content = content.replace(f"{{{{{key}}}}}", str(val))
+    return HTMLResponse(content=content)
 
 from models.data_models import ToggleSettingRequest, ThresholdUpdateRequest
 from models.state import bot_state, live_data
@@ -1027,4 +1038,4 @@ async def close_position(symbol: str):
 @router.get("/", response_class=HTMLResponse)
 async def root_dashboard(request: Request):
     now_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    return templates.TemplateResponse(request, "index.html", {"now_utc": now_utc})
+    return render_template("index.html", {"request": request, "now_utc": now_utc})

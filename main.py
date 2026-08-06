@@ -3,7 +3,7 @@ import logging
 import os
 import threading
 import time
-import requests
+import urllib.request
 from datetime import datetime
 from fastapi import FastAPI, Request, BackgroundTasks, Body, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -32,8 +32,9 @@ def keep_alive_worker():
         try:
             base_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("APP_URL") or "http://127.0.0.1:8000"
             target_url = f"{base_url.rstrip('/')}/api/live-data"
-            response = requests.get(target_url, timeout=10)
-            logger.info(f"[KEEP_ALIVE] Ping to {target_url} returned HTTP {response.status_code}")
+            req = urllib.request.Request(target_url, headers={"User-Agent": "KeepAlive/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                logger.info(f"[KEEP_ALIVE] Ping to {target_url} returned HTTP {resp.status}")
         except Exception as e:
             logger.warning(f"[KEEP_ALIVE] Keep-alive ping failed gracefully: {e}")
         
