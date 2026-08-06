@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import httpx
 
+from typing import Tuple, Dict
 from models.data_models import CryptoTicker, MarketRegime
 from models.state import live_data, bot_state
 from engine.alpha_engine import calculate_rsi, calculate_sma, AlphaEngine
